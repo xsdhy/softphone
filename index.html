@@ -1,0 +1,332 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>softphone</title>
+
+    <script src="/dist/ctibar.js"></script>
+
+    <link rel="stylesheet" href="./static/css/my.css">
+
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.js"></script>
+</head>
+
+<body>
+<div id="app">
+    <div class="my-softphone">
+        <div class="softphone-stream" style="display:none;">
+            <video id="audioView" autoplay></video>
+        </div>
+
+        <div class="status disabled" style="padding:3px 0 0 0;color:#ffffff;width: 200px;overflow: hidden;">
+            <div v-if="!status_is_call && !status_is_ring">
+                <div v-show="!status_is_login" style="padding:15px 0 0 0px;">
+                    分机未登录，连接失败
+                </div>
+                <div v-show="status_is_login" style="padding:15px 0 0 0px;color:#000000;">
+                    分机：<span class="number">{{ ext_number }}</span> 登录成功
+                </div>
+            </div>
+            <div v-else>
+                <div v-show="status_is_call || status_is_ring" style="color:#000000;">
+                    <div class="text" id="discall">号码：<span class="number">{{ discaller }}</span>-><span
+                            class="number">{{ discalled }}</span></div>
+                    <div class="text">时长：<span class="timer">{{ calltime }}</span></div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="soft-function" :class="{disabled:!(status_is_ring && 'inbound' === call_type)}" @click="answer">
+            <div class="icon"><i class="kfont">&#xe698;</i></div>
+            <div class="text">接听</div>
+        </div>
+
+        <div class="soft-function" :class="{disabled:!(status_is_ring || status_is_call)}" @click="hungup">
+            <div class="icon"><i class="kfont">&#xe60e;</i></div>
+            <div class="text">挂断</div>
+        </div>
+
+
+
+        <div class="soft-function" :class="{disabled:!status_is_login}">
+            <div v-show="!status_is_mute" class="soft-function" :class="{disabled:status_is_mute}" @click="mute">
+                <div class="icon"><i class="kfont">&#xe682;</i></div>
+                <div class="text">静音</div>
+            </div>
+            <div v-show="status_is_mute" class="soft-function" :class="{disabled:!status_is_mute}" @click="unmute">
+                <div class="icon"><i class="kfont">&#xe636;</i></div>
+                <div class="text">取消静音</div>
+            </div>
+        </div>
+
+        <div class="soft-function diafunction" :class="{disabled:!status_is_login || status_is_ring || status_is_call }"
+             @click="makeCall">
+            <div class="icon"><i class="kfont">&#xe670;</i></div>
+            <div class="text">拨打</div>
+        </div>
+        <div class="soft-function" :class="{disabled:!status_is_call}">
+            <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
+                <div class="icon"><i class="kfont">&#xe647;</i></div>
+                <div class="text">保持</div>
+            </div>
+            <div v-else class="soft-function" :class="{unhold:status_is_hold}" @click="unhold">
+                <div class="icon"><i class="kfont">&#xe605;</i></div>
+                <div class="text">取回</div>
+            </div>
+        </div>
+
+        <div class="soft-function disabled" id="softphone-trans">
+            <div class="icon"><i class="kfont">&#xe663;</i></div>
+            <div class="text">转接</div>
+        </div>
+
+        <div class="soft-function">
+            <div v-if="!status_is_login" class="soft-function login" @click="login">
+                <div class="icon"><i class="kfont">&#xe61f;</i></div>
+                <div class="text">登录</div>
+            </div>
+            <div v-else class="soft-function logout" @click="logout">
+                <div class="icon"><i class="kfont">&#xe611;</i></div>
+                <div class="text">登出</div>
+            </div>
+        </div>
+
+
+
+        <br><br>
+        <div class="setting" style="margin-top:20px;">
+            <h2>参数设置</h2>
+            <div><strong>sip服务器:</strong><input type="text" v-model="configuration.host"></div>
+            <div><strong>sip端口:</strong><input type="text" v-model="configuration.port"></div>
+            <div><strong>分机号:</strong><input type="text" v-model="configuration.extNo"></div>
+            <div><strong>分机密码:</strong><input type="text" v-model="configuration.extPwd"></div>
+            <div><strong>外呼号码:</strong><input type="text" v-model="phone_number"></div>
+        </div>
+    </div>
+</div>
+</body>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data() {
+            return {
+
+
+                configuration: {
+                    host: 'rongeke.geotmtai.com.cn',
+                    port: '5064',
+                    proto: true,
+                    extNo: '100019',
+                    extPwd: '5e9288d4e4',
+                    autoRegister: false,
+                    debug:false,
+                    stateEventListener: this.stateEventListener
+                },
+
+
+                // configuration: {
+                //    host: 'ws.sip.aicxsx.com',
+                //    port: '6063',
+                //    proto: true,
+                //    extNo: '10001',
+                //    extPwd: 'xsdhy123456',
+                //    autoRegister: true,
+                //    debug:true,
+                //    stateEventListener: this.stateEventListener
+                //  },
+
+                status_is_login: false,//是否登陆
+                status_is_ring: false,//是否在振铃中
+                status_is_call: false,//是否在拨打中
+                status_is_hold: false,//是否在保持中
+                status_is_mute: false,//是否在静音中
+
+                call_type: '',//呼叫方向:in,out,''
+
+                ext_number: "",//分机号
+                discaller: "",//主叫号码
+                discalled: "",//被叫号码
+                phone_number: "100034",//呼出号码
+
+                durtime: 0,//计时器
+                calltime: '00:00:00',//计时器-格式化
+                calltimeinter: null,//计时器-定时器,
+
+                history_accounts: []//历史账号列表
+            }
+        },
+        created() {
+        },
+        methods: {
+            login() {
+                console.log("点击登陆按钮");
+                Ctibar.initSDK(this.configuration);
+
+            },
+            logout() {
+                console.log("点击退出按钮")
+                Ctibar.unregister()
+            },
+
+            answer() {
+                console.log("点击应答按钮")
+                Ctibar.answer()
+            },
+            mute() {
+               Ctibar.mute()
+            },
+            unmute() {
+                Ctibar.unmute()
+            },
+            hold() {
+                console.log("点击保持按钮")
+                Ctibar.hold()
+            },
+            unhold() {
+                console.log("点击取消保持按钮")
+                Ctibar.unhold()
+            },
+            makeCall() {
+                console.log("点击拨打按钮")
+                if (this.phone_number.length <= 2) {
+                    alert("请输入要拨打的号码");
+                    return
+                }
+                Ctibar.makecall(this.phone_number.trim());
+            },
+            hungup() {
+                console.log("点击挂断按钮");
+                Ctibar.hangup()
+            },
+
+
+            //事件回调
+            stateEventListener(event, data) {
+                console.log("收到事件", event, data);
+                switch (event) {
+                    case "REGISTERED":
+                        this.ext_number = data;
+                        this.status_is_login = true;
+                        break;
+                    case "UNREGISTERED":
+                        this.status_is_login = false;
+                        this.status_is_hold = false;
+                        this.status_is_ring = false;
+                        this.status_is_call = false;
+                        break;
+                    case "INCOMING_CALL":
+                    case "OUTGOING_CALL":
+                        console.log("来电反向",data.direction)
+                        this.startTimerCall();
+                        this.status_is_ring = true;
+                        this.call_type = data.direction;
+                        this.discaller = "a";
+                        this.discalled = "b";
+                        //1.0.4版本
+                        // if ('out' === this.call_type){
+                        //   window.Ctibar.answer();
+                        // }
+                        break;
+                    case "IN_CALL":
+                        this.startTimerCall();
+                        this.status_is_ring = false;
+                        this.status_is_call = true;
+                        break;
+                    case "CALL_END":
+                        this.stopTimerCall();
+                        this.status_is_ring = false;
+                        this.status_is_call = false;
+                        break;
+                    case "HOLD":
+                        this.status_is_hold = true;
+                        break;
+                    case "UNHOLD":
+                        this.status_is_hold = false;
+                        break;
+                    case "MUTE":
+                        this.status_is_mute = true;
+                        break;
+                    case "UNMUTE":
+                        this.status_is_mute = false;
+                        break;
+                    case "CONNECTED":
+                        //已连接
+                        Ctibar.register()
+                        break;
+                    case "DISCONNECT":
+                        break;
+                    case "RECONNECT":
+                        break;
+                    case "ERROR":
+                        break;
+                    default:
+                        console.log("未处理事件")
+                }
+            },
+
+
+            //启动计时器
+            startTimerCall() {
+                if (this.calltimeinter) {
+                    clearInterval(this.calltimeinter);
+                    this.calltime = "00:00:00";
+                    this.durtime = 0;
+                }
+                this.calltimeinter = setInterval(() => {
+                    this.timerCall();
+                }, 1000)
+            },
+            //停止计时器
+            stopTimerCall() {
+                if (this.calltimeinter) {
+                    clearInterval(this.calltimeinter);
+                    this.calltime = "00:00:00";
+                    this.durtime = 0;
+                }
+            },
+            //计时器
+            timerCall() {
+                this.durtime++;
+                var sec = this.durtime % 60;
+                if (sec < 10) {
+                    sec = "0" + sec;
+                }
+                var min = Math.floor((this.durtime % (60 * 60)) / 60);
+                if (min < 10) {
+                    min = "0" + min;
+                }
+                var hour = Math.floor(this.durtime / (60 * 60));
+                if (hour < 10) {
+                    hour = "0" + hour;
+                }
+                this.calltime = hour + ":" + min + ":" + sec
+            },
+
+
+        }
+    });
+</script>
+</html>
+
+
+<style>
+    .setting div {
+        margin-top: 10px;
+        margin-left: 10px;
+    }
+
+    .setting h2 {
+        font-weight: 900;
+        margin-right: 20px;
+    }
+
+    .setting strong {
+        font-weight: 500;
+        margin-right: 20px;
+    }
+
+
+</style>
