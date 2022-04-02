@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>softphone</title>
 
-    <script src="/dist/ctibar.js"></script>
+    <script src="/ctibar.js"></script>
 
     <link rel="stylesheet" href="./static/css/my.css">
 
@@ -113,30 +113,26 @@
         el: '#app',
         data() {
             return {
-
-
-                configuration: {
-                    host: 'rongeke.geotmtai.com.cn',
-                    port: '5064',
-                    proto: true,
-                    extNo: '100019',
-                    extPwd: '5e9288d4e4',
-                    autoRegister: false,
-                    debug:false,
-                    stateEventListener: this.stateEventListener
-                },
-
-
                 // configuration: {
-                //    host: 'ws.sip.aicxsx.com',
-                //    port: '6063',
-                //    proto: true,
-                //    extNo: '10001',
-                //    extPwd: 'xsdhy123456',
-                //    autoRegister: true,
-                //    debug:true,
-                //    stateEventListener: this.stateEventListener
-                //  },
+                //     host: 'rongeke.geotmtai.com.cn',
+                //     port: '5064',
+                //     proto: true,
+                //     extNo: '100019',
+                //     extPwd: '5e9288d4e4',
+                //     autoRegister: false,
+                //     debug:false,
+                //     stateEventListener: this.stateEventListener
+                // },
+                configuration: {
+                   host: 'ws.sip.aicxsx.com',
+                   port: '6063',
+                   proto: true,
+                   extNo: '10001',
+                   extPwd: '',
+                   autoRegister: true,
+                   debug:true,
+                   stateEventListener: this.stateEventListener
+                 },
 
                 status_is_login: false,//是否登陆
                 status_is_ring: false,//是否在振铃中
@@ -164,7 +160,6 @@
             login() {
                 console.log("点击登陆按钮");
                 Ctibar.initSDK(this.configuration);
-
             },
             logout() {
                 console.log("点击退出按钮")
