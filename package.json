@@ -18,6 +18,11 @@
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.8.0",
     "jssip": "^3.9.0",
+
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^10.2.0",
+    "html-webpack-plugin": "^5.5.0",
+
     "webpack": "^5.70.0",
 
     "@babel/cli": "^7.8.4",
