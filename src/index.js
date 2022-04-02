@@ -118,7 +118,11 @@ const initSDK = (config) => {
     let port = config.port
     let proto = config.proto ? 'wss' : 'ws'
     let extNo = config.extNo
-    let extPwd = config.extPwd
+    let extPwd = config.extPwd;
+    let domain = host;
+    if (undefined !== config.domain && config.domain.length>0){
+        domain = config.domain;
+    }
 
     //注入状态回调函数
     if (config.stateEventListener !== null) {
@@ -147,7 +151,8 @@ const initSDK = (config) => {
     socket = new JsSIP.WebSocketInterface(wsServer)
     var configuration = {
         sockets: [socket],
-        uri: 'sip:' + extNo + '@' + host,
+        // uri: 'sip:' + extNo + '@' + host,
+        uri: 'sip:' + extNo + '@' + domain,
         password: extPwd,
         register: false,
         register_expires: 300,

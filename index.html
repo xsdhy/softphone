@@ -37,7 +37,6 @@
         </div>
 
 
-
         <div class="soft-function" :class="{disabled:!(status_is_ring && 'inbound' === call_type)}" @click="answer">
             <div class="icon"><i class="kfont">&#xe698;</i></div>
             <div class="text">接听</div>
@@ -47,7 +46,6 @@
             <div class="icon"><i class="kfont">&#xe60e;</i></div>
             <div class="text">挂断</div>
         </div>
-
 
 
         <div class="soft-function" :class="{disabled:!status_is_login}">
@@ -94,15 +92,26 @@
         </div>
 
 
-
         <br><br>
         <div class="setting" style="margin-top:20px;">
             <h2>参数设置</h2>
             <div><strong>sip服务器:</strong><input type="text" v-model="configuration.host"></div>
             <div><strong>sip端口:</strong><input type="text" v-model="configuration.port"></div>
+            <div><strong>domain:</strong><input type="text" v-model="configuration.domain"></div>
             <div><strong>分机号:</strong><input type="text" v-model="configuration.extNo"></div>
             <div><strong>分机密码:</strong><input type="text" v-model="configuration.extPwd"></div>
             <div><strong>外呼号码:</strong><input type="text" v-model="phone_number"></div>
+        </div>
+
+        <div>
+            <h2 v-if="history_accounts.length>0">历史账号</h2>
+            <div v-if="history_accounts.length>0">
+                <li v-for="(item,index) in history_accounts" :key="index">
+                    环境:{{item.host}};账号:{{item.extNo}}
+                    <button v-if="status_is_login" disabled @click="use_history_accounts(item)">使用</button>
+                    <button v-else @click="use_history_accounts(item)">使用</button>
+                </li>
+            </div>
         </div>
     </div>
 </div>
@@ -113,26 +122,17 @@
         el: '#app',
         data() {
             return {
-                // configuration: {
-                //     host: 'rongeke.geotmtai.com.cn',
-                //     port: '5064',
-                //     proto: true,
-                //     extNo: '100019',
-                //     extPwd: '5e9288d4e4',
-                //     autoRegister: false,
-                //     debug:false,
-                //     stateEventListener: this.stateEventListener
-                // },
                 configuration: {
-                   host: 'ws.sip.aicxsx.com',
-                   port: '6063',
-                   proto: true,
-                   extNo: '10001',
-                   extPwd: '',
-                   autoRegister: true,
-                   debug:true,
-                   stateEventListener: this.stateEventListener
-                 },
+                    host: 'ws.sip.aicxsx.com',
+                    port: '6063',
+                    domain: 'chinalifecx',
+                    proto: true,
+                    extNo: '10001',
+                    extPwd: '',
+                    autoRegister: true,
+                    debug: true,
+                    stateEventListener: this.stateEventListener
+                },
 
                 status_is_login: false,//是否登陆
                 status_is_ring: false,//是否在振铃中
@@ -140,12 +140,12 @@
                 status_is_hold: false,//是否在保持中
                 status_is_mute: false,//是否在静音中
 
-                call_type: '',//呼叫方向:in,out,''
+                call_type: '',//呼叫方向
 
                 ext_number: "",//分机号
                 discaller: "",//主叫号码
                 discalled: "",//被叫号码
-                phone_number: "100034",//呼出号码
+                phone_number: "17311225659",//呼出号码
 
                 durtime: 0,//计时器
                 calltime: '00:00:00',//计时器-格式化
@@ -155,6 +155,10 @@
             }
         },
         created() {
+            let history_accounts = localStorage.getItem("history_accounts")
+            if (null != history_accounts) {
+                this.history_accounts = JSON.parse(history_accounts)
+            }
         },
         methods: {
             login() {
@@ -171,7 +175,7 @@
                 Ctibar.answer()
             },
             mute() {
-               Ctibar.mute()
+                Ctibar.mute()
             },
             unmute() {
                 Ctibar.unmute()
@@ -196,8 +200,6 @@
                 console.log("点击挂断按钮");
                 Ctibar.hangup()
             },
-
-
             //事件回调
             stateEventListener(event, data) {
                 console.log("收到事件", event, data);
@@ -213,17 +215,14 @@
                         this.status_is_call = false;
                         break;
                     case "INCOMING_CALL":
+                        this.playRingMedia()
                     case "OUTGOING_CALL":
-                        console.log("来电反向",data.direction)
+                        console.log("来电", data.direction)
                         this.startTimerCall();
                         this.status_is_ring = true;
                         this.call_type = data.direction;
                         this.discaller = "a";
                         this.discalled = "b";
-                        //1.0.4版本
-                        // if ('out' === this.call_type){
-                        //   window.Ctibar.answer();
-                        // }
                         break;
                     case "IN_CALL":
                         this.startTimerCall();
@@ -232,6 +231,7 @@
                         break;
                     case "CALL_END":
                         this.stopTimerCall();
+                        this.stopPlayRingMedia();
                         this.status_is_ring = false;
                         this.status_is_call = false;
                         break;
@@ -249,13 +249,15 @@
                         break;
                     case "CONNECTED":
                         //已连接
+                        this.save_history_accounts()
                         Ctibar.register()
                         break;
                     case "DISCONNECT":
                         break;
                     case "RECONNECT":
                         break;
-                    case "ERROR":
+                    case "REGISTER_FAILED":
+                        alert(data.msg);
                         break;
                     default:
                         console.log("未处理事件")
@@ -301,6 +303,73 @@
             },
 
 
+            //播放挂机铃声
+            playHangupMedia() {
+                const _this = this;
+                var hangupAudio = document.getElementById("hangupMediaAudioId")
+                if (!hangupAudio) {
+                    hangupAudio = document.createElement('audio');
+                    hangupAudio.id = 'hangupMediaAudioId';
+                    hangupAudio.hidden = true;
+                    hangupAudio.src = './static/wav/hangup.wav'
+                    document.body.appendChild(hangupAudio);
+                }
+                hangupAudio.play();
+            },
+            //播放来电振铃
+            playRingMedia() {
+                const _this = this;
+                _this.stopPlayRingMedia();
+
+                var ringAudio = document.getElementById("ringMediaAudioId")
+                if (!ringAudio) {
+                    ringAudio = document.createElement('audio');
+                    ringAudio.id = 'ringMediaAudioId';
+                    ringAudio.hidden = true;
+                    ringAudio.src = './static/wav/ring.wav';
+                    ringAudio.loop = 'loop';
+                    document.body.appendChild(ringAudio);
+                }
+                ringAudio.play();
+            },
+            //停止播放来电振铃
+            stopPlayRingMedia() {
+                const _this = this;
+                var ringAudio = document.getElementById("ringMediaAudioId");
+                if (ringAudio) {
+                    document.body.removeChild(ringAudio);
+                }
+            },
+
+            //使用历史账号
+            use_history_accounts(item) {
+                console.log("使用历史账号:", item)
+                this.configuration.host = item.host;
+                this.configuration.port = item.port;
+                this.configuration.domain = item.domain;
+                this.configuration.extNo = item.extNo;
+                this.configuration.extPwd = item.extPwd;
+            },
+            //保存账号
+            save_history_accounts() {
+                let in_history_accounts = false
+                this.history_accounts.forEach((item, index) => {
+                    if (item.host === this.configuration.host && item.extNo === this.configuration.extNo) {
+                        in_history_accounts = true;
+                    }
+                })
+                if (in_history_accounts) {
+                    return
+                }
+                this.history_accounts.push({
+                    host: this.configuration.host,
+                    port: this.configuration.port,
+                    domain: this.configuration.domain,
+                    extNo: this.configuration.extNo,
+                    extPwd: this.configuration.extPwd,
+                })
+                localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
+            },
         }
     });
 </script>
