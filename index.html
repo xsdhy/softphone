@@ -106,6 +106,7 @@
                     环境:{{item.host}};账号:{{item.extNo}}
                     <button v-if="status_is_login" disabled @click="use_history_accounts(item)">使用</button>
                     <button v-else @click="use_history_accounts(item)">使用</button>
+                    <button  @click="del_history_accounts(index)">删除</button>
                 </li>
             </div>
         </div>
@@ -119,12 +120,12 @@
         data() {
             return {
                 configuration: {
-                    host: 'ws.sip.aicxsx.com',
-                    port: '6063',
-                    domain: 'chinalifecx',
+                    host: 'sip.system.rongeke.com',
+                    port: '5064',
+                    domain: '',
                     proto: true,
-                    extNo: '10001',
-                    extPwd: '',
+                    extNo: '100001',
+                    extPwd: '7975c819ae',
                     autoRegister: false,
                     debug: true,
                     stateEventListener: this.stateEventListener
@@ -151,10 +152,7 @@
             }
         },
         created() {
-            let history_accounts = localStorage.getItem("history_accounts")
-            if (null != history_accounts) {
-                this.history_accounts = JSON.parse(history_accounts)
-            }
+            this.init_history_accounts();
         },
         methods: {
             login() {
@@ -337,6 +335,12 @@
                 }
             },
 
+            init_history_accounts() {
+                let history_accounts = localStorage.getItem("history_accounts")
+                if (null != history_accounts) {
+                    this.history_accounts = JSON.parse(history_accounts)
+                }
+            },
             //使用历史账号
             use_history_accounts(item) {
                 console.log("使用历史账号:", item)
@@ -345,6 +349,12 @@
                 this.configuration.domain = item.domain;
                 this.configuration.extNo = item.extNo;
                 this.configuration.extPwd = item.extPwd;
+            },
+            del_history_accounts(i){
+                if (this.history_accounts.length>0) {
+                    this.history_accounts.splice(i)
+                    localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
+                }
             },
             //保存账号
             save_history_accounts() {

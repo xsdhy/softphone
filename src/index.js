@@ -146,7 +146,7 @@ const initSDK = (config) => {
 
     //坐席号码
     localAgent = extNo
-
+    // JsSIP.C.SESSION_EXPIRES=120,JsSIP.C.MIN_SESSION_EXPIRES=120;
     let wsServer = proto + '://' + host + ':' + port
     socket = new JsSIP.WebSocketInterface(wsServer)
     var configuration = {
@@ -314,7 +314,7 @@ const makecall = (phone) => {
             sessionTimersExpires: 120,
             pcConfig: {
                 iceServers: [
-                    {urls: "stun:stun1.ketianyun.com:3478"}
+                    {urls: "stun:139.155.11.48:3478"}
                 ]
             }
         })
@@ -333,7 +333,13 @@ const makecall = (phone) => {
 const answer = () => {
     if (currentSession && currentSession.isInProgress()) {
         currentSession.answer({
-            mediaConstraints: constraints
+            mediaConstraints: constraints,
+            pcConfig: {
+                iceTransportPolicy: "relay",
+                iceServers: [
+                    {urls: "stun:139.155.11.48:3478"}
+                ]
+            }
         })
     } else {
         let msg = '非法操作，通话尚未建立或状态不正确，请勿操作.'
