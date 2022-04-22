@@ -255,11 +255,17 @@ const initSDK = (config) => {
         });
 
         //防止检测时间过长
-        let iceCandidateCount = 0;
+        let iceCandidateTimeout = null;
         s.on('icecandidate', (evt) => {
-            if(iceCandidateCount++ > 4){
+            if(iceCandidateTimeout != null){
+                clearTimeout(iceCandidateTimeout);
+            }
+
+            if (evt.candidate.type === "srflx" || evt.candidate.type==="relay"){
                 evt.ready();
             }
+
+            iceCandidateTimeout = setTimeout(evt.ready,1000);
         })
 
     })
@@ -313,8 +319,12 @@ const makecall = (phone) => {
             extraHeaders: ["X-JCallId: " + currentCallId],
             sessionTimersExpires: 120,
             pcConfig: {
+                iceTransportPolicy:"relay",
                 iceServers: [
-                    {urls: "stun:139.155.11.48:3478"}
+                    {urls: ['turn:139.155.11.48:3478'],
+                        username: 'xsdhy',
+                        credential: '123456',
+                        credentialType: 'password'},
                 ]
             }
         })
@@ -337,7 +347,10 @@ const answer = () => {
             pcConfig: {
                 iceTransportPolicy: "relay",
                 iceServers: [
-                    {urls: "stun:139.155.11.48:3478"}
+                    {urls: ['turn:139.155.11.48:3478'],
+                        username: 'xsdhy',
+                        credential: '123456',
+                        credentialType: 'password'},
                 ]
             }
         })
