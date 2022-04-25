@@ -359,12 +359,19 @@
             //保存账号
             save_history_accounts() {
                 let is_add = true;
-                this.history_accounts.forEach((item, index) => {
-                    if (item.host === this.configuration.host && item.extNo === this.configuration.extNo) {
+
+
+                for (let index = 0; index < this.history_accounts.length; index++) {
+                    if (this.history_accounts[index].host === this.configuration.host && this.history_accounts[index].extNo === this.configuration.extNo) {
                         is_add=false;
-                        this.history_accounts[index] = this.configuration;
+
+                        this.history_accounts[index].host=this.configuration.host;
+                        this.history_accounts[index].port=this.configuration.port;
+                        this.history_accounts[index].domain= this.configuration.domain;
+                        this.history_accounts[index].extNo= this.configuration.extNo;
+                        this.history_accounts[index].extPwd= this.configuration.extPwd;
                     }
-                })
+                }
                 if (is_add) {
                     this.history_accounts.push({
                         host: this.configuration.host,
