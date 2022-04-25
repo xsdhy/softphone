@@ -89,7 +89,7 @@
 
 
         <br><br>
-        <div class="setting" style="margin-top:20px;">
+        <div class="setting">
             <h2>参数设置</h2>
             <div><strong>sip服务器:</strong><input type="text" v-model="configuration.host"></div>
             <div><strong>sip端口:</strong><input type="text" v-model="configuration.port"></div>
@@ -103,7 +103,7 @@
             <h2 v-if="history_accounts.length>0">历史账号</h2>
             <div v-if="history_accounts.length>0">
                 <li v-for="(item,index) in history_accounts" :key="index">
-                    环境:{{item.host}};账号:{{item.extNo}}
+                    {{item.host}}:{{item.port}};账号:{{item.extNo}}
                     <button v-if="status_is_login" disabled @click="use_history_accounts(item)">使用</button>
                     <button v-else @click="use_history_accounts(item)">使用</button>
                     <button  @click="del_history_accounts(index)">删除</button>
@@ -120,11 +120,11 @@
         data() {
             return {
                 configuration: {
-                    host: 'sip.system.rongeke.com',
-                    port: '5064',
+                    host: '',
+                    port: '',
                     domain: '',
                     proto: true,
-                    extNo: '100001',
+                    extNo: '',
                     extPwd: '',
                     autoRegister: false,
                     debug: true,
@@ -358,22 +358,23 @@
             },
             //保存账号
             save_history_accounts() {
-                let in_history_accounts = false
+                let is_add = true;
                 this.history_accounts.forEach((item, index) => {
                     if (item.host === this.configuration.host && item.extNo === this.configuration.extNo) {
-                        in_history_accounts = true;
+                        is_add=false;
+                        this.history_accounts[index] = this.configuration;
                     }
                 })
-                if (in_history_accounts) {
-                    return
+                if (is_add) {
+                    this.history_accounts.push({
+                        host: this.configuration.host,
+                        port: this.configuration.port,
+                        domain: this.configuration.domain,
+                        extNo: this.configuration.extNo,
+                        extPwd: this.configuration.extPwd,
+                    })
                 }
-                this.history_accounts.push({
-                    host: this.configuration.host,
-                    port: this.configuration.port,
-                    domain: this.configuration.domain,
-                    extNo: this.configuration.extNo,
-                    extPwd: this.configuration.extPwd,
-                })
+
                 localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
             },
         }
