@@ -473,13 +473,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 
 //网速检测
-const testNetwork = () => {
+const testNetwork = (imgUrl) => {
     return __awaiter(this, void 0, void 0, function* () {
         const testNetwork = () => {
             return new Promise(resolve => {
                 let img = document.createElement('img');
                 let start = Date.now();
-                img.src = 'https://zhiper-cdn.oss-cn-shanghai.aliyuncs.com/test-network-speed.jpg?_=' + Date.now();
+
+                if (imgUrl) {
+                    img.url = imgUrl + Date.now();
+                } else {
+                    img.src = 'https://zhiper-cdn.oss-cn-shanghai.aliyuncs.com/test-network-speed.jpg?_=' + Date.now();
+                }
                 let size = 194.84; // 图片大小为194KB
                 img.onload = function () {
                     let time = Date.now() - start;

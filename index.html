@@ -140,6 +140,11 @@
                 <audio controls="" :loop="false" :autoplay="false"
                        src="https://web.sdk.qcloud.com/trtc/webrtc/assets/testspeak.mp3"></audio>
             </div>
+            <div>
+                <div class="title-small">测速</div>
+                {{networkSpeed}}
+                <button @click="testNetworkHandel">测速</button>
+            </div>
         </div>
     </div>
 </div>
@@ -181,20 +186,19 @@
 
                 history_accounts: [],//历史账号列表
 
+                networkSpeed:0,//网速
                 testMicrophoneOb: null,
                 testMicrophoneVolume: 0,
                 mediaDevices: null
             }
         },
         created() {
-            console.log("v1.0.1");
+            console.log("v1.0.2");
             this.init_history_accounts();
-
 
             Ctibar.getMediaDeviceInfo().then((res) => {
                 this.mediaDevices = res;
             });
-
         },
         methods: {
             login() {
@@ -445,6 +449,13 @@
                     this.testMicrophoneOb=null;
                 }
             },
+            testNetworkHandel(){
+                //window.location.host+'/static/images/test-network-speed.jpg'
+                Ctibar.testNetwork().then((networkSpeed)=>{
+                    this.networkSpeed=networkSpeed;
+                    console.log("测速:",networkSpeed)
+                });
+            }
         }
     });
 </script>
