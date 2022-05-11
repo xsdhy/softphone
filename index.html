@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="./static/css/my.css">
     <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.js"></script>
 
-    <link rel="stylesheet" href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/theme-chalk/index.min.css">
+    <link rel="stylesheet"
+          href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/theme-chalk/index.min.css">
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/index.min.js"></script>
 </head>
 
@@ -130,7 +131,8 @@
             <div>
                 <div class="title-small">输入设备</div>
                 <div>
-                    <el-progress :text-inside="true" :stroke-width="24" :percentage="testMicrophoneVolume" status="success"></el-progress>
+                    <el-progress :text-inside="true" :stroke-width="24" :percentage="testMicrophoneVolume"
+                                 status="success"></el-progress>
                     <button v-if="testMicrophoneOb" @click="testMicrophoneHandelStop">结束测试</button>
                     <button v-else @click="testMicrophoneHandelStart">开始测试</button>
                 </div>
@@ -142,7 +144,7 @@
             </div>
             <div>
                 <div class="title-small">测速</div>
-                {{networkSpeed}}
+                {{this.getFileSize(networkSpeed)}}
                 <button @click="testNetworkHandel">测速</button>
             </div>
         </div>
@@ -186,7 +188,7 @@
 
                 history_accounts: [],//历史账号列表
 
-                networkSpeed:0,//网速
+                networkSpeed: 0,//网速
                 testMicrophoneOb: null,
                 testMicrophoneVolume: 0,
                 mediaDevices: null
@@ -445,16 +447,30 @@
             testMicrophoneHandelStop() {
                 if (this.testMicrophoneOb) {
                     this.testMicrophoneOb.yes();
-                    this.testMicrophoneVolume=0;
-                    this.testMicrophoneOb=null;
+                    this.testMicrophoneVolume = 0;
+                    this.testMicrophoneOb = null;
                 }
             },
-            testNetworkHandel(){
+            testNetworkHandel() {
                 //window.location.host+'/static/images/test-network-speed.jpg'
-                Ctibar.testNetwork().then((networkSpeed)=>{
-                    this.networkSpeed=networkSpeed;
-                    console.log("测速:",networkSpeed)
+                Ctibar.testNetwork().then((networkSpeed) => {
+                    this.networkSpeed = networkSpeed;
+                    console.log("测速:", this.getFileSize(networkSpeed))
                 });
+            },
+            getFileSize(size) {//把字节转换成正常文件大小
+                if (!size) return "";
+                size=size*1024;
+                var num = 1024.00; //byte
+                if (size < num)
+                    return size + "B";
+                if (size < Math.pow(num, 2))
+                    return (size / num).toFixed(2) + "KB/S"; //kb
+                if (size < Math.pow(num, 3))
+                    return (size / Math.pow(num, 2)).toFixed(2) + "MB/S"; //M
+                if (size < Math.pow(num, 4))
+                    return (size / Math.pow(num, 3)).toFixed(2) + "G/S"; //G
+                return (size / Math.pow(num, 4)).toFixed(2) + "T/S"; //T
             }
         }
     });
@@ -473,7 +489,7 @@
         margin-bottom: 8px;
     }
 
-    .config .title-small{
+    .config .title-small {
         font-weight: 500;
         margin-bottom: 5px;
     }

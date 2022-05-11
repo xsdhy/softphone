@@ -478,14 +478,13 @@ const testNetwork = (imgUrl) => {
         const testNetwork = () => {
             return new Promise(resolve => {
                 let img = document.createElement('img');
-                let start = Date.now();
-
                 if (imgUrl) {
                     img.url = imgUrl + Date.now();
                 } else {
                     img.src = 'https://zhiper-cdn.oss-cn-shanghai.aliyuncs.com/test-network-speed.jpg?_=' + Date.now();
                 }
                 let size = 194.84; // 图片大小为194KB
+                let start = Date.now();
                 img.onload = function () {
                     let time = Date.now() - start;
                     resolve(size * 1000 / time);
@@ -496,7 +495,7 @@ const testNetwork = (imgUrl) => {
             });
         };
         // 网速测试10次 取平均数
-        let size = 10;
+        let size = 5;
         let rs = [];
         for (let i = 0; i < size; i++) {
             rs.push(yield testNetwork());
