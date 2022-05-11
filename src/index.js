@@ -321,9 +321,9 @@ const makecall = (phone) => {
             pcConfig: {
                 iceTransportPolicy:"relay",
                 iceServers: [
-                    {urls: ['turn:139.155.11.48:3478'],
-                        username: 'xsdhy',
-                        credential: '123456',
+                    {urls: ['turn:stun.rongeke.com:3478'],
+                        username: 'admin',
+                        credential: 'Geo123456',
                         credentialType: 'password'},
                 ]
             }
@@ -347,10 +347,7 @@ const answer = () => {
             pcConfig: {
                 iceTransportPolicy: "relay",
                 iceServers: [
-                    {urls: ['turn:139.155.11.48:3478'],
-                        username: 'xsdhy',
-                        credential: '123456',
-                        credentialType: 'password'},
+                    {urls: ['turn:stun.rongeke.com:3478'], username: 'admin', credential: 'Geo123456', credentialType: 'password'},
                 ]
             }
         })

@@ -152,6 +152,7 @@
             }
         },
         created() {
+            console.log("v1.0.0");
             this.init_history_accounts();
         },
         methods: {
@@ -220,6 +221,7 @@
                         break;
                     case "IN_CALL":
                         this.startTimerCall();
+                        this.stopPlayRingMedia();
                         this.status_is_ring = false;
                         this.status_is_call = true;
                         break;
