@@ -347,6 +347,7 @@ const answer = () => {
             pcConfig: {
                 iceTransportPolicy: "relay",
                 iceServers: [
+                    {urls: ['stun:stun.rongeke.com:3478']},
                     {urls: ['turn:stun.rongeke.com:3478'], username: 'admin', credential: 'Geo123456', credentialType: 'password'},
                 ]
             }
