@@ -120,7 +120,7 @@ const initSDK = (config) => {
     let extNo = config.extNo
     let extPwd = config.extPwd;
     let domain = host;
-    if (undefined !== config.domain && config.domain.length>0){
+    if (undefined !== config.domain && config.domain.length > 0) {
         domain = config.domain;
     }
 
@@ -132,14 +132,14 @@ const initSDK = (config) => {
     autoRegister = config.autoRegister
 
     //麦克风检测开启
-    if(config.checkMic){
+    if (config.checkMic) {
         //执行麦克风检测报错
         micCheck()
     }
 
-    if(config.debug){
+    if (config.debug) {
         JsSIP.debug.enable('JsSIP:*');
-    }else {
+    } else {
         JsSIP.debug.disable()
     }
 
@@ -257,15 +257,15 @@ const initSDK = (config) => {
         //防止检测时间过长
         let iceCandidateTimeout = null;
         s.on('icecandidate', (evt) => {
-            if(iceCandidateTimeout != null){
+            if (iceCandidateTimeout != null) {
                 clearTimeout(iceCandidateTimeout);
             }
 
-            if (evt.candidate.type === "srflx" || evt.candidate.type==="relay"){
+            if (evt.candidate.type === "srflx" || evt.candidate.type === "relay") {
                 evt.ready();
             }
 
-            iceCandidateTimeout = setTimeout(evt.ready,1000);
+            iceCandidateTimeout = setTimeout(evt.ready, 1000);
         })
 
     })
@@ -319,12 +319,14 @@ const makecall = (phone) => {
             extraHeaders: ["X-JCallId: " + currentCallId],
             sessionTimersExpires: 120,
             pcConfig: {
-                iceTransportPolicy:"relay",
+                iceTransportPolicy: "relay",
                 iceServers: [
-                    {urls: ['turn:stun.rongeke.com:3478'],
+                    {
+                        urls: ['turn:stun.rongeke.com:3478'],
                         username: 'admin',
                         credential: 'Geo123456',
-                        credentialType: 'password'},
+                        credentialType: 'password'
+                    },
                 ]
             }
         })
@@ -348,7 +350,12 @@ const answer = () => {
                 iceTransportPolicy: "relay",
                 iceServers: [
                     {urls: ['stun:stun.rongeke.com:3478']},
-                    {urls: ['turn:stun.rongeke.com:3478'], username: 'admin', credential: 'Geo123456', credentialType: 'password'},
+                    {
+                        urls: ['turn:stun.rongeke.com:3478'],
+                        username: 'admin',
+                        credential: 'Geo123456',
+                        credentialType: 'password'
+                    },
                 ]
             }
         })
@@ -432,6 +439,140 @@ const micCheck = () => {
     })
 }
 
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) {
+        return value instanceof P ? value : new P(function (resolve) {
+            resolve(value);
+        });
+    }
+
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) {
+            try {
+                step(generator.next(value));
+            } catch (e) {
+                reject(e);
+            }
+        }
+
+        function rejected(value) {
+            try {
+                step(generator["throw"](value));
+            } catch (e) {
+                reject(e);
+            }
+        }
+
+        function step(result) {
+            result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+        }
+
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+//网速检测
+const testNetwork = () => {
+    return __awaiter(this, void 0, void 0, function* () {
+        const testNetwork = () => {
+            return new Promise(resolve => {
+                let img = document.createElement('img');
+                let start = Date.now();
+                img.src = 'https://zhiper-cdn.oss-cn-shanghai.aliyuncs.com/test-network-speed.jpg?_=' + Date.now();
+                let size = 194.84; // 图片大小为194KB
+                img.onload = function () {
+                    let time = Date.now() - start;
+                    resolve(size * 1000 / time);
+                };
+                img.onerror = function () {
+                    resolve(0);
+                };
+            });
+        };
+        // 网速测试10次 取平均数
+        let size = 10;
+        let rs = [];
+        for (let i = 0; i < size; i++) {
+            rs.push(yield testNetwork());
+        }
+        return rs.reduce((total, num) => total + num) / size;
+    });
+}
+
+//麦克风测试
+const testMicrophone = (handle) => {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            let stream = yield navigator.mediaDevices.getUserMedia({audio: true});
+            let context = new AudioContext(); //音频内容
+            let recorder = context.createScriptProcessor(4096, 1, 1);
+            recorder.addEventListener("audioprocess", e => {
+                let buffer = e.inputBuffer.getChannelData(0);
+                let maxVal = 0;
+                for (let i = 0; i < buffer.length; i++) {
+                    if (maxVal < buffer[i]) {
+                        maxVal = buffer[i];
+                    }
+                }
+                // 模拟音量
+                handle(Math.round(maxVal * 100));
+            });
+            let audioInput = context.createMediaStreamSource(stream);
+            audioInput.connect(recorder);
+            recorder.connect(context.destination);
+            const stop = () => {
+                if (this.microphone !== undefined) {
+                    return;
+                }
+                audioInput.disconnect();
+                recorder.disconnect();
+                stream.getTracks()[0].stop();
+            };
+            return {
+                yes: () => {
+                    stop();
+                    this.microphone = true;
+                }, no: () => {
+                    stop();
+                    this.microphone = false;
+                }
+            };
+        } catch (e) {
+            this.microphone = false;
+            return {
+                yes: () => {
+                },
+                no: () => {
+                },
+            };
+        }
+    });
+}
+
+//获取设备信息
+const getMediaDeviceInfo = () => {
+    return __awaiter(this, void 0, void 0, function* () {
+        let deviceInfos = yield navigator.mediaDevices.enumerateDevices();
+        let devices = {};
+        for (let {kind, label, deviceId, groupId} of deviceInfos) {
+            let kindText = "";
+            switch (kind) {
+                case "audioinput":
+                    kindText = "输入";
+                    break;
+                case "audiooutput":
+                    kindText = "输出";
+                    break;
+                default:
+                    kindText = "未知";
+            }
+            devices[kind + groupId] = {kind, label, deviceId, groupId, kindText}
+        }
+        return devices;
+    });
+}
+
 //导出对外暴露的方法
 module.exports = {
     initSDK,
@@ -443,5 +584,9 @@ module.exports = {
     answer,
     hold,
     unhold,
-    transfer
+    transfer,
+
+    testNetwork,
+    testMicrophone,
+    getMediaDeviceInfo
 }

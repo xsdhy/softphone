@@ -6,6 +6,9 @@
     <script src="/ctibar.js"></script>
     <link rel="stylesheet" href="./static/css/my.css">
     <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.js"></script>
+
+    <link rel="stylesheet" href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/theme-chalk/index.min.css">
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/index.min.js"></script>
 </head>
 
 <body>
@@ -89,12 +92,11 @@
         </div>
 
 
-
     </div>
 
     <div class="config">
         <div>
-            <h4>参数设置</h4>
+            <div class="title">参数设置</div>
             <div><strong>sip服务器:</strong><input type="text" v-model="configuration.host"></div>
             <div><strong>sip端口:</strong><input type="text" v-model="configuration.port"></div>
             <div><strong>domain:</strong><input type="text" v-model="configuration.domain"></div>
@@ -104,14 +106,39 @@
         </div>
 
         <div>
-            <h4 v-if="history_accounts.length>0">历史账号</h4>
+            <div class="title" v-if="history_accounts.length>0">历史账号</div>
             <div v-if="history_accounts.length>0">
                 <li v-for="(item,index) in history_accounts" :key="index">
                     {{item.extNo}}@{{item.host}}:{{item.port}}
                     <button v-if="status_is_login" disabled @click="use_history_accounts(item)">使用</button>
                     <button v-else @click="use_history_accounts(item)">使用</button>
-                    <button  @click="del_history_accounts(index)">删除</button>
+                    <button @click="del_history_accounts(index)">删除</button>
                 </li>
+            </div>
+        </div>
+
+        <div>
+            <div class="title">调试信息</div>
+            <div v-if="mediaDevices">
+                <div class="title-small">设备列表</div>
+                <div>
+                    <li v-for="(device,index) in mediaDevices">
+                        {{device.kindText}}-{{device.label}}
+                    </li>
+                </div>
+            </div>
+            <div>
+                <div class="title-small">输入设备</div>
+                <div>
+                    <el-progress :text-inside="true" :stroke-width="24" :percentage="testMicrophoneVolume" status="success"></el-progress>
+                    <button v-if="testMicrophoneOb" @click="testMicrophoneHandelStop">结束测试</button>
+                    <button v-else @click="testMicrophoneHandelStart">开始测试</button>
+                </div>
+            </div>
+            <div>
+                <div class="title-small">输出设备</div>
+                <audio controls="" :loop="false" :autoplay="false"
+                       src="https://web.sdk.qcloud.com/trtc/webrtc/assets/testspeak.mp3"></audio>
             </div>
         </div>
     </div>
@@ -152,12 +179,22 @@
                 calltime: '00:00:00',//计时器-格式化
                 calltimeinter: null,//计时器-定时器,
 
-                history_accounts: []//历史账号列表
+                history_accounts: [],//历史账号列表
+
+                testMicrophoneOb: null,
+                testMicrophoneVolume: 0,
+                mediaDevices: null
             }
         },
         created() {
             console.log("v1.0.1");
             this.init_history_accounts();
+
+
+            Ctibar.getMediaDeviceInfo().then((res) => {
+                this.mediaDevices = res;
+            });
+
         },
         methods: {
             login() {
@@ -356,8 +393,8 @@
                 this.configuration.extNo = item.extNo;
                 this.configuration.extPwd = item.extPwd;
             },
-            del_history_accounts(i){
-                if (this.history_accounts.length>0) {
+            del_history_accounts(i) {
+                if (this.history_accounts.length > 0) {
                     this.history_accounts.splice(i)
                     localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
                 }
@@ -369,13 +406,13 @@
 
                 for (let index = 0; index < this.history_accounts.length; index++) {
                     if (this.history_accounts[index].host === this.configuration.host && this.history_accounts[index].extNo === this.configuration.extNo) {
-                        is_add=false;
+                        is_add = false;
 
-                        this.history_accounts[index].host=this.configuration.host;
-                        this.history_accounts[index].port=this.configuration.port;
-                        this.history_accounts[index].domain= this.configuration.domain;
-                        this.history_accounts[index].extNo= this.configuration.extNo;
-                        this.history_accounts[index].extPwd= this.configuration.extPwd;
+                        this.history_accounts[index].host = this.configuration.host;
+                        this.history_accounts[index].port = this.configuration.port;
+                        this.history_accounts[index].domain = this.configuration.domain;
+                        this.history_accounts[index].extNo = this.configuration.extNo;
+                        this.history_accounts[index].extPwd = this.configuration.extPwd;
                     }
                 }
                 if (is_add) {
@@ -390,6 +427,24 @@
 
                 localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
             },
+
+
+            //麦克风音量检测-开始
+            testMicrophoneHandelStart() {
+                Ctibar.testMicrophone((volume) => {
+                    this.testMicrophoneVolume = volume
+                }).then((res) => {
+                    this.testMicrophoneOb = res;
+                });
+            },
+            //麦克风音量检测-结束
+            testMicrophoneHandelStop() {
+                if (this.testMicrophoneOb) {
+                    this.testMicrophoneOb.yes();
+                    this.testMicrophoneVolume=0;
+                    this.testMicrophoneOb=null;
+                }
+            },
         }
     });
 </script>
@@ -399,11 +454,17 @@
 <style>
     .config {
         margin-top: 100px;
+        max-width: 500px;
     }
 
-    .config h4 {
+    .config .title {
         font-weight: 900;
-        margin-right: 20px;
+        margin-bottom: 8px;
+    }
+
+    .config .title-small{
+        font-weight: 500;
+        margin-bottom: 5px;
     }
 
     .config strong {
