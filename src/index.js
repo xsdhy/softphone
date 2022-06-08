@@ -83,6 +83,8 @@ let otherLegNumber
 //当前通话uuid
 let currentCallId;
 
+let reRegisterTimeInter;
+
 //清理全局变量
 const cleanGlobalCallData = () => {
     outgoingSession = null
@@ -156,6 +158,8 @@ const initSDK = (config) => {
         password: extPwd,
         register: false,
         register_expires: 300,
+        // connection_recovery_max_interval:30,
+        // connection_recovery_min_interval:4,
         user_agent: 'JsSIP'
     }
     ua = new JsSIP.UA(configuration)
@@ -171,26 +175,39 @@ const initSDK = (config) => {
 
     //websocket连接失败
     ua.on('disconnected', (e) => {
+        console.log("disconnected:",e)
+        //ua.stop()
         onChangeState(DISCONNECTED)
     })
 
     //注册成功
     ua.on('registered', (e) => {
+        console.log("registered:",e)
+
+        //sip注册心跳机制
+        if (!reRegisterTimeInter){
+            // setInterval(reRegister, (configuration.register_expires-100)*1000)
+            setInterval(reRegister, 50*1000)
+        }
+
         onChangeState(REGISTERED)
     })
     //取消注册
     ua.on('unregistered', (e) => {
+        console.log("unregistered:",e)
+        reRegisterTimeInter=null
         onChangeState(UNREGISTERED)
     })
     //注册失败
     ua.on('registrationFailed', (e) => {
-        console.error(e)
+        console.error("registrationFailed",e)
         let msg = '注册失败,请检查账号密码是否正确。' + e.cause
         onChangeState(REGISTER_FAILED, {msg: msg})
     })
     //Fired a few seconds before the registration expires. If the application does not set any listener for this event,
     // JsSIP will just re-register as usual.
     ua.on('registrationExpiring', (e) => {
+        console.error("registrationExpiring",e)
         ua.register()
     })
 
@@ -207,8 +224,6 @@ const initSDK = (config) => {
             direction = 'inbound'
             otherLegNumber = s.remote_identity.display_name
             currentEvent = INCOMING_CALL
-
-
         } else {
             //console.info('<<<<<<<<<<<<<<<<<<<<外呼<<<<<<<<<<<<<<<<<<<<')
             direction = 'outbound'
@@ -260,6 +275,7 @@ const initSDK = (config) => {
             if (iceCandidateTimeout != null) {
                 clearTimeout(iceCandidateTimeout);
             }
+            console.log("网卡检测:",evt.candidate.type)
 
             if (evt.candidate.type === "srflx" || evt.candidate.type === "relay") {
                 evt.ready();
@@ -272,6 +288,12 @@ const initSDK = (config) => {
 
     //启动UA
     ua.start()
+}
+
+const reRegister = () => {
+    if (ua.isConnected) {
+        ua.register()
+    }
 }
 
 //注册请求
@@ -319,14 +341,15 @@ const makecall = (phone) => {
             extraHeaders: ["X-JCallId: " + currentCallId],
             sessionTimersExpires: 120,
             pcConfig: {
-                iceTransportPolicy: "relay",
+                // iceTransportPolicy: "relay",
                 iceServers: [
-                    {
-                        urls: ['turn:stun.rongeke.com:3478'],
-                        username: 'admin',
-                        credential: 'Geo123456',
-                        credentialType: 'password'
-                    },
+                    {urls: ['stun:stun.rongeke.com:3478']},
+                    // {
+                    //     urls: ['turn:stun.rongeke.com:3478'],
+                    //     username: 'admin',
+                    //     credential: 'Geo123456',
+                    //     credentialType: 'password'
+                    // },
                 ]
             }
         })
@@ -347,15 +370,15 @@ const answer = () => {
         currentSession.answer({
             mediaConstraints: constraints,
             pcConfig: {
-                iceTransportPolicy: "relay",
+                // iceTransportPolicy: "relay",
                 iceServers: [
                     {urls: ['stun:stun.rongeke.com:3478']},
-                    {
-                        urls: ['turn:stun.rongeke.com:3478'],
-                        username: 'admin',
-                        credential: 'Geo123456',
-                        credentialType: 'password'
-                    },
+                    // {
+                    //     urls: ['turn:stun.rongeke.com:3478'],
+                    //     username: 'admin',
+                    //     credential: 'Geo123456',
+                    //     credentialType: 'password'
+                    // },
                 ]
             }
         })

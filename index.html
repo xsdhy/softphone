@@ -100,6 +100,7 @@
             <div class="title">参数设置</div>
             <div><strong>sip服务器:</strong><input type="text" v-model="configuration.host"></div>
             <div><strong>sip端口:</strong><input type="text" v-model="configuration.port"></div>
+            <div><strong>sipSSL:</strong><input type="checkbox" v-model="configuration.proto"></div>
             <div><strong>domain:</strong><input type="text" v-model="configuration.domain"></div>
             <div><strong>分机号:</strong><input type="text" v-model="configuration.extNo"></div>
             <div><strong>分机密码:</strong><input type="text" v-model="configuration.extPwd"></div>
@@ -165,7 +166,7 @@
                     extNo: '',
                     extPwd: '',
                     autoRegister: false,
-                    debug: true,
+                    debug: false,
                     stateEventListener: this.stateEventListener
                 },
 
@@ -395,6 +396,7 @@
                 console.log("使用历史账号:", item)
                 this.configuration.host = item.host;
                 this.configuration.port = item.port;
+                this.configuration.proto = item.proto;
                 this.configuration.domain = item.domain;
                 this.configuration.extNo = item.extNo;
                 this.configuration.extPwd = item.extPwd;
@@ -416,6 +418,7 @@
 
                         this.history_accounts[index].host = this.configuration.host;
                         this.history_accounts[index].port = this.configuration.port;
+                        this.history_accounts[index].proto = this.configuration.proto;
                         this.history_accounts[index].domain = this.configuration.domain;
                         this.history_accounts[index].extNo = this.configuration.extNo;
                         this.history_accounts[index].extPwd = this.configuration.extPwd;
@@ -425,6 +428,7 @@
                     this.history_accounts.push({
                         host: this.configuration.host,
                         port: this.configuration.port,
+                        proto: this.configuration.proto,
                         domain: this.configuration.domain,
                         extNo: this.configuration.extNo,
                         extPwd: this.configuration.extPwd,
