@@ -22,16 +22,16 @@
         <div class="status disabled" style="padding:3px 0 0 0;color:#ffffff;width: 200px;overflow: hidden;">
             <div v-if="!status_is_call && !status_is_ring">
                 <div v-show="!status_is_login" style="padding:15px 0 0 0px;">
-                    分机未登录，连接失败
+                    分机未登录
                 </div>
                 <div v-show="status_is_login" style="padding:15px 0 0 0px;color:#000000;">
-                    分机：<span class="number">{{ ext_number }}</span> 登录成功
+                    分机：<span class="number">{{ ext_number }}</span> 在线
                 </div>
             </div>
             <div v-else>
                 <div v-show="status_is_call || status_is_ring" style="color:#000000;">
                     <div class="text" id="discall">号码：<span class="number">{{ discaller }}</span>-><span
-                            class="number">{{ discalled }}</span></div>
+                            class="number">{{ discallee }}</span></div>
                     <div class="text">时长：<span class="timer">{{ calltime }}</span></div>
                 </div>
             </div>
@@ -180,7 +180,7 @@
 
                 ext_number: "",//分机号
                 discaller: "",//主叫号码
-                discalled: "",//被叫号码
+                discallee: "",//被叫号码
                 phone_number: "17311225659",//呼出号码
 
                 durtime: 0,//计时器
@@ -248,7 +248,7 @@
                 console.log("收到事件", event, data);
                 switch (event) {
                     case "REGISTERED":
-                        this.ext_number = data;
+
                         this.status_is_login = true;
                         break;
                     case "UNREGISTERED":
@@ -264,8 +264,8 @@
                         this.startTimerCall();
                         this.status_is_ring = true;
                         this.call_type = data.direction;
-                        this.discaller = "a";
-                        this.discalled = "b";
+                        this.discaller = data.otherLegNumber;
+                        this.discallee = this.ext_number;
                         break;
                     case "IN_CALL":
                         this.startTimerCall();
@@ -294,6 +294,7 @@
                     case "CONNECTED":
                         //已连接
                         this.save_history_accounts()
+                        this.ext_number = data.localAgent;
                         Ctibar.register()
                         break;
                     case "DISCONNECT":

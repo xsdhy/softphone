@@ -222,17 +222,18 @@ const initSDK = (config) => {
             incomingSession = data.session
             currentSession = incomingSession
             direction = 'inbound'
-            otherLegNumber = s.remote_identity.display_name
             currentEvent = INCOMING_CALL
         } else {
             //console.info('<<<<<<<<<<<<<<<<<<<<外呼<<<<<<<<<<<<<<<<<<<<')
             direction = 'outbound'
             currentEvent = OUTGOING_CALL
         }
+        console.log("电话号码",data.request.from._uri.user)
 
         s.on('progress', (evt) => {
             //console.info('通话振铃-->通话振铃')
-            onChangeState(currentEvent, {direction: direction, otherLegNumber: otherLegNumber, callId: currentCallId})
+            //s.remote_identity.display_name
+            onChangeState(currentEvent, {direction: direction, otherLegNumber: data.request.from._uri.user, callId: currentCallId})
         });
 
         s.on('accepted', (evt) => {
@@ -344,12 +345,6 @@ const makecall = (phone) => {
                 // iceTransportPolicy: "relay",
                 iceServers: [
                     {urls: ['stun:stun.rongeke.com:3478']},
-                    // {
-                    //     urls: ['turn:stun.rongeke.com:3478'],
-                    //     username: 'admin',
-                    //     credential: 'Geo123456',
-                    //     credentialType: 'password'
-                    // },
                 ]
             }
         })
@@ -376,7 +371,7 @@ const answer = () => {
                     // {
                     //     urls: ['turn:stun.rongeke.com:3478'],
                     //     username: 'admin',
-                    //     credential: 'Geo123456',
+                    //     credential: 'password',
                     //     credentialType: 'password'
                     // },
                 ]
