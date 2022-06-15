@@ -158,6 +158,7 @@ const initSDK = (config) => {
         password: extPwd,
         register: false,
         register_expires: 300,
+        session_timers: false,
         // connection_recovery_max_interval:30,
         // connection_recovery_min_interval:4,
         user_agent: 'JsSIP'
