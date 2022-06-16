@@ -1,10 +1,11 @@
-# WebRTC Phone Used By JsSIP
-本项目为基于JsSIP实现的webrtc软电话条，可以对接opensips、freeswitch
+# 话务条
+本项目为基于JsSIP实现的webrtc软电话条、话务条，可以对接opensips、freeswitch。
+
+在线地址: [https://softphone.xsdhy.com](https://softphone.xsdhy.com/)
 
 ## 安装构建
 ```
 yarn
-
 yarn build
 ```
 

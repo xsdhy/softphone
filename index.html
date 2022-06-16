@@ -100,13 +100,27 @@
         <el-tab-pane label="参数设置" name="base">
             <div>
                 <el-form ref="form" size="mini" label-position="left" label-width="80px">
-                    <el-form-item label="sip服务器"><el-input type="text" v-model="configuration.host" clearable /></el-form-item>
-                    <el-form-item label="sip端口"><el-input type="text" v-model="configuration.port" clearable /></el-form-item>
-                    <el-form-item label="ssl"><el-switch v-model="configuration.proto"/></el-form-item>
-                    <el-form-item label="domain"><el-input type="text" v-model="configuration.domain" placeholder="选填" clearable/></el-form-item>
-                    <el-form-item label="分机号"><el-input type="text" v-model="configuration.extNo" clearable /></el-form-item>
-                    <el-form-item label="分机密码"><el-input type="text" v-model="configuration.extPwd" clearable /></el-form-item>
-                    <el-form-item label="外呼号码"><el-input type="text" v-model="phone_number" clearable /></el-form-item>
+                    <el-form-item label="sip服务器">
+                        <el-input type="text" v-model="configuration.host" clearable/>
+                    </el-form-item>
+                    <el-form-item label="sip端口">
+                        <el-input type="text" v-model="configuration.port" maxlength="5" clearable/>
+                    </el-form-item>
+                    <el-form-item label="ssl">
+                        <el-switch v-model="configuration.proto"/>
+                    </el-form-item>
+                    <el-form-item label="domain">
+                        <el-input type="text" v-model="configuration.domain" placeholder="选填" clearable/>
+                    </el-form-item>
+                    <el-form-item label="分机号">
+                        <el-input type="text" v-model="configuration.extNo" clearable/>
+                    </el-form-item>
+                    <el-form-item label="分机密码">
+                        <el-input type="password" v-model="configuration.extPwd" clearable show-password/>
+                    </el-form-item>
+                    <el-form-item label="外呼号码">
+                        <el-input type="text" v-model="phone_number" clearable/>
+                    </el-form-item>
                 </el-form>
             </div>
 
@@ -114,34 +128,32 @@
                 <el-divider content-position="left">历史账号</el-divider>
                 <div>
                     <el-table :data="history_accounts" stripe style="width: 100%" size="mini" :show-header="false">
-                        <el-table-column type="expand">
+                        <el-table-column type="expand" width="15">
                             <template slot-scope="props">
-                                <el-form label-position="left" class="demo-table-expand">
-                                    <el-form-item label="服务器">
-                                        <span>{{ props.row.host }}:{{ props.row.port }}</span>
-                                    </el-form-item>
-                                    <el-form-item label="domain">
-                                        <span>{{ props.row.domain }}</span>
-                                    </el-form-item>
-                                    <el-form-item label="分机号">
-                                        <span>{{ props.row.extNo }}</span>
-                                    </el-form-item>
-                                    <el-form-item label="密码">
-                                        <span>{{ props.row.extPwd }}</span>
-                                    </el-form-item>
-                                </el-form>
+                                <el-descriptions :column="1" size="mini" border>
+                                    <el-descriptions-item label="服务器">{{ props.row.host }}:{{ props.row.port }}
+                                    </el-descriptions-item>
+                                    <el-descriptions-item label="domain">{{ props.row.domain }}</el-descriptions-item>
+                                    <el-descriptions-item label="分机号">{{ props.row.extNo }}</el-descriptions-item>
+                                    <el-descriptions-item label="密码">{{ props.row.extPwd }}</el-descriptions-item>
+                                </el-descriptions>
                             </template>
                         </el-table-column>
                         <el-table-column label="SERVER">
                             <template slot-scope="scope">
-                                {{ scope.row.extNo }}@{{ scope.row.host }}:{{ scope.row.port }}
+                                <span style="font-size: 14px">{{ scope.row.extNo }}@{{ scope.row.host
+                                    }}:{{ scope.row.port }}</span>
                             </template>
                         </el-table-column>
-                        <el-table-column label="操作">
+                        <el-table-column label="操作" width="136">
                             <template slot-scope="scope">
                                 <el-button-group>
-                                    <el-button size="mini" type="primary" :disable="status_is_login" @click="use_history_accounts(scope.row)">使用</el-button>
-                                    <el-button size="mini" type="danger" @click="del_history_accounts(scope.$index)">删除</el-button>
+                                    <el-button size="mini" type="primary" :disabled="status_is_login"
+                                               @click="use_history_accounts(scope.row)">使用
+                                    </el-button>
+                                    <el-button size="mini" type="danger" :disabled="status_is_login"
+                                               @click="del_history_accounts(scope.$index)">删除
+                                    </el-button>
                                 </el-button-group>
                             </template>
                         </el-table-column>
@@ -152,22 +164,44 @@
         </el-tab-pane>
 
         <el-tab-pane label="调试信息" name="test">
-                <el-divider content-position="left">设备列表</el-divider>
-                <li v-for="(device,index) in mediaDevices">
-                    {{device.kindText}}-{{device.label}}
-                </li>
+            <el-divider content-position="left">设备列表</el-divider>
+            <li v-for="(device,index) in mediaDevices">
+                {{device.kindText}}-{{device.label}}
+            </li>
 
-                <el-divider content-position="left">麦克风测试</el-divider>
-                <el-progress :text-inside="true" :stroke-width="24" :percentage="testMicrophoneVolume" status="success"></el-progress>
-                <el-button size="mini" type="info" round v-if="testMicrophoneOb" @click="testMicrophoneHandelStop">结束测试</el-button>
-                <el-button size="mini" type="info" round v-else @click="testMicrophoneHandelStart">开始测试</el-button>
+            <el-divider content-position="left">麦克风测试</el-divider>
 
-                <el-divider content-position="left">耳机测试</el-divider>
-                <audio controls="" :loop="false" :autoplay="false"
-                       src="https://web.sdk.qcloud.com/trtc/webrtc/assets/testspeak.mp3"></audio>
+            <el-row>
+                <el-col :span="16">
+                    <el-progress :text-inside="true" :stroke-width="24" :percentage="testMicrophoneVolume"
+                                 status="success"></el-progress>
+                </el-col>
+                <el-col :span="8">
+                    <el-button size="mini" type="danger" round v-if="testMicrophoneOb"
+                               @click="testMicrophoneHandelStop">结束测试
+                    </el-button>
+                    <el-button size="mini" type="success" round v-else @click="testMicrophoneHandelStart">开始测试
+                    </el-button>
+                </el-col>
+            </el-row>
 
-                <el-divider content-position="left">测速</el-divider>
-                {{this.getFileSize(networkSpeed)}}<el-button size="mini" type="info" round @click="testNetworkHandel">测速</el-button>
+            <el-divider content-position="left">耳机测试</el-divider>
+            <audio style="height: 30px" controls="" :loop="false" :autoplay="false"
+                   src="https://web.sdk.qcloud.com/trtc/webrtc/assets/testspeak.mp3"></audio>
+
+
+        </el-tab-pane>
+
+        <el-tab-pane label="使用说明" name="instructions">
+            <div style="font-size: 10px">
+                <h3>开源JS软电话</h3>
+                <p>
+                    历史账号使用localStorage本地存储，放心使用
+                </p>
+                <p>
+                    GITHUB:<a target="_blank" href="https://github.com/xsdhy/softphone">https://github.com/xsdhy/softphone</a>
+                </p>
+            </div>
         </el-tab-pane>
     </el-tabs>
 
@@ -179,7 +213,7 @@
         el: '#app',
         data() {
             return {
-                activeTabName:"base",
+                activeTabName: "base",
                 configuration: {
                     host: '',
                     port: '',
@@ -433,8 +467,6 @@
             //保存账号
             save_history_accounts() {
                 let is_add = true;
-
-
                 for (let index = 0; index < this.history_accounts.length; index++) {
                     if (this.history_accounts[index].host === this.configuration.host && this.history_accounts[index].extNo === this.configuration.extNo) {
                         is_add = false;
@@ -487,7 +519,7 @@
             },
             getFileSize(size) {//把字节转换成正常文件大小
                 if (!size) return "";
-                size=size*1024;
+                size = size * 1024;
                 var num = 1024.00; //byte
                 if (size < num)
                     return size + "B";
@@ -517,7 +549,12 @@
     }
 
     /*表单行间距缩小*/
-    .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item{
+    .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item {
         margin-bottom: 5px;
     }
+
+    .el-form-item {
+        margin-bottom: 5px;
+    }
+
 </style>
