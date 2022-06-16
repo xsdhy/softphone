@@ -1,7 +1,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>softphone</title>
+    <title>话务条</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
     <script src="/ctibar.js"></script>
     <link rel="stylesheet" href="./static/css/my.css">
@@ -95,61 +95,82 @@
 
     </div>
 
-    <div class="config">
-        <div>
-            <div class="title">参数设置</div>
-            <div><strong>sip服务器:</strong><input type="text" v-model="configuration.host"></div>
-            <div><strong>sip端口:</strong><input type="text" v-model="configuration.port"></div>
-            <div><strong>sipSSL:</strong><input type="checkbox" v-model="configuration.proto"></div>
-            <div><strong>domain:</strong><input type="text" v-model="configuration.domain"></div>
-            <div><strong>分机号:</strong><input type="text" v-model="configuration.extNo"></div>
-            <div><strong>分机密码:</strong><input type="text" v-model="configuration.extPwd"></div>
-            <div><strong>外呼号码:</strong><input type="text" v-model="phone_number"></div>
-        </div>
 
-        <div>
-            <div class="title" v-if="history_accounts.length>0">历史账号</div>
+    <el-tabs class="config" type="border-card" v-model="activeTabName">
+        <el-tab-pane label="参数设置" name="base">
+            <div>
+                <el-form ref="form" size="mini" label-position="left" label-width="80px">
+                    <el-form-item label="sip服务器"><el-input type="text" v-model="configuration.host" clearable /></el-form-item>
+                    <el-form-item label="sip端口"><el-input type="text" v-model="configuration.port" clearable /></el-form-item>
+                    <el-form-item label="ssl"><el-switch v-model="configuration.proto"/></el-form-item>
+                    <el-form-item label="domain"><el-input type="text" v-model="configuration.domain" placeholder="选填" clearable/></el-form-item>
+                    <el-form-item label="分机号"><el-input type="text" v-model="configuration.extNo" clearable /></el-form-item>
+                    <el-form-item label="分机密码"><el-input type="text" v-model="configuration.extPwd" clearable /></el-form-item>
+                    <el-form-item label="外呼号码"><el-input type="text" v-model="phone_number" clearable /></el-form-item>
+                </el-form>
+            </div>
+
             <div v-if="history_accounts.length>0">
-                <li v-for="(item,index) in history_accounts" :key="index">
-                    {{item.extNo}}@{{item.host}}:{{item.port}}
-                    <button v-if="status_is_login" disabled @click="use_history_accounts(item)">使用</button>
-                    <button v-else @click="use_history_accounts(item)">使用</button>
-                    <button @click="del_history_accounts(index)">删除</button>
-                </li>
+                <el-divider content-position="left">历史账号</el-divider>
+                <div>
+                    <el-table :data="history_accounts" stripe style="width: 100%" size="mini" :show-header="false">
+                        <el-table-column type="expand">
+                            <template slot-scope="props">
+                                <el-form label-position="left" class="demo-table-expand">
+                                    <el-form-item label="服务器">
+                                        <span>{{ props.row.host }}:{{ props.row.port }}</span>
+                                    </el-form-item>
+                                    <el-form-item label="domain">
+                                        <span>{{ props.row.domain }}</span>
+                                    </el-form-item>
+                                    <el-form-item label="分机号">
+                                        <span>{{ props.row.extNo }}</span>
+                                    </el-form-item>
+                                    <el-form-item label="密码">
+                                        <span>{{ props.row.extPwd }}</span>
+                                    </el-form-item>
+                                </el-form>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="SERVER">
+                            <template slot-scope="scope">
+                                {{ scope.row.extNo }}@{{ scope.row.host }}:{{ scope.row.port }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作">
+                            <template slot-scope="scope">
+                                <el-button-group>
+                                    <el-button size="mini" type="primary" :disable="status_is_login" @click="use_history_accounts(scope.row)">使用</el-button>
+                                    <el-button size="mini" type="danger" @click="del_history_accounts(scope.$index)">删除</el-button>
+                                </el-button-group>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
             </div>
-        </div>
 
-        <div>
-            <div class="title">调试信息</div>
-            <div v-if="mediaDevices">
-                <div class="title-small">设备列表</div>
-                <div>
-                    <li v-for="(device,index) in mediaDevices">
-                        {{device.kindText}}-{{device.label}}
-                    </li>
-                </div>
-            </div>
-            <div>
-                <div class="title-small">输入设备</div>
-                <div>
-                    <el-progress :text-inside="true" :stroke-width="24" :percentage="testMicrophoneVolume"
-                                 status="success"></el-progress>
-                    <button v-if="testMicrophoneOb" @click="testMicrophoneHandelStop">结束测试</button>
-                    <button v-else @click="testMicrophoneHandelStart">开始测试</button>
-                </div>
-            </div>
-            <div>
-                <div class="title-small">输出设备</div>
+        </el-tab-pane>
+
+        <el-tab-pane label="调试信息" name="test">
+                <el-divider content-position="left">设备列表</el-divider>
+                <li v-for="(device,index) in mediaDevices">
+                    {{device.kindText}}-{{device.label}}
+                </li>
+
+                <el-divider content-position="left">麦克风测试</el-divider>
+                <el-progress :text-inside="true" :stroke-width="24" :percentage="testMicrophoneVolume" status="success"></el-progress>
+                <el-button size="mini" type="info" round v-if="testMicrophoneOb" @click="testMicrophoneHandelStop">结束测试</el-button>
+                <el-button size="mini" type="info" round v-else @click="testMicrophoneHandelStart">开始测试</el-button>
+
+                <el-divider content-position="left">耳机测试</el-divider>
                 <audio controls="" :loop="false" :autoplay="false"
                        src="https://web.sdk.qcloud.com/trtc/webrtc/assets/testspeak.mp3"></audio>
-            </div>
-            <div>
-                <div class="title-small">测速</div>
-                {{this.getFileSize(networkSpeed)}}
-                <button @click="testNetworkHandel">测速</button>
-            </div>
-        </div>
-    </div>
+
+                <el-divider content-position="left">测速</el-divider>
+                {{this.getFileSize(networkSpeed)}}<el-button size="mini" type="info" round @click="testNetworkHandel">测速</el-button>
+        </el-tab-pane>
+    </el-tabs>
+
 </div>
 </body>
 
@@ -158,6 +179,7 @@
         el: '#app',
         data() {
             return {
+                activeTabName:"base",
                 configuration: {
                     host: '',
                     port: '',
@@ -485,22 +507,17 @@
 
 <style>
     .config {
-        margin-top: 100px;
+        margin-top: 110px;
         max-width: 500px;
-    }
-
-    .config .title {
-        font-weight: 900;
-        margin-bottom: 8px;
-    }
-
-    .config .title-small {
-        font-weight: 500;
-        margin-bottom: 5px;
     }
 
     .config strong {
         font-weight: 500;
         margin-right: 20px;
+    }
+
+    /*表单行间距缩小*/
+    .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item{
+        margin-bottom: 5px;
     }
 </style>
