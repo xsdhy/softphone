@@ -22,6 +22,7 @@ const IN_CALL = "IN_CALL"                   //通话中
 const HOLD = "HOLD"                         //保持中
 const CALL_END = "CALL_END"                 //通话结束
 
+
 //本地媒体流
 var localStream = null;
 //创建audio控件并且自动播放
@@ -444,6 +445,16 @@ const transfer = (phone) => {
     currentSession.refer(phone)
 }
 
+const dtmf = (tone)=>{
+    if (currentSession && currentSession.isInProgress()) {
+        console.log("按键了",tone)
+        currentSession.sendDTMF(tone,{
+            'duration': 160,
+            'interToneGap': 1200,
+            'extraHeaders': []})
+    }
+}
+
 
 //麦克风检测
 const micCheck = () => {
@@ -610,6 +621,7 @@ module.exports = {
     hold,
     unhold,
     transfer,
+    dtmf,
 
     testNetwork,
     testMicrophone,

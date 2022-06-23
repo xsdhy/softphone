@@ -237,7 +237,7 @@
                 ext_number: "",//分机号
                 discaller: "",//主叫号码
                 discallee: "",//被叫号码
-                phone_number: "17311225659",//呼出号码
+                phone_number: "",//呼出号码
 
                 durtime: 0,//计时器
                 calltime: '00:00:00',//计时器-格式化
@@ -254,6 +254,7 @@
         created() {
             console.log("v1.0.2");
             this.init_history_accounts();
+            this.phone_number=localStorage.getItem("phone_number")
 
             Ctibar.getMediaDeviceInfo().then((res) => {
                 this.mediaDevices = res;
@@ -293,6 +294,8 @@
                     alert("请输入要拨打的号码");
                     return
                 }
+                localStorage.setItem("phone_number",this.phone_number)
+                this.discallee=this.phone_number
                 Ctibar.makecall(this.phone_number.trim());
             },
             hungup() {
@@ -447,6 +450,7 @@
                 if (null != history_accounts) {
                     this.history_accounts = JSON.parse(history_accounts)
                 }
+                this.use_history_accounts(this.history_accounts[0])
             },
             //使用历史账号
             use_history_accounts(item) {
