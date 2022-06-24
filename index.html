@@ -19,20 +19,20 @@
             <video id="audioView" autoplay></video>
         </div>
 
-        <div class="status disabled" style="padding:3px 0 0 0;color:#ffffff;width: 200px;overflow: hidden;">
+        <div class="status">
             <div v-if="!status_is_call && !status_is_ring">
-                <div v-show="!status_is_login" style="padding:15px 0 0 0px;">
+                <div v-show="!status_is_login" style="padding:10px 0 0 0px;">
                     分机未登录
                 </div>
-                <div v-show="status_is_login" style="padding:15px 0 0 0px;color:#000000;">
+                <div v-show="status_is_login" style="padding:10px 0 0 0px;">
                     分机：<span class="number">{{ ext_number }}</span> 在线
                 </div>
             </div>
             <div v-else>
-                <div v-show="status_is_call || status_is_ring" style="color:#000000;">
-                    <div class="text" id="discall">号码：<span class="number">{{ discaller }}</span>-><span
+                <div v-show="status_is_call || status_is_ring">
+                    <div class="text">号码：<span class="number">{{ discaller }}</span>-><span
                             class="number">{{ discallee }}</span></div>
-                    <div class="text">时长：<span class="timer">{{ calltime }}</span></div>
+                    <div class="text">时长：<span class="number">{{ calltime }}</span></div>
                 </div>
             </div>
         </div>
@@ -49,18 +49,7 @@
         </div>
 
 
-        <div class="soft-function" :class="{disabled:!status_is_login}">
-            <div v-show="!status_is_mute" class="soft-function" :class="{disabled:status_is_mute}" @click="mute">
-                <div class="icon"><i class="kfont">&#xe682;</i></div>
-                <div class="text">静音</div>
-            </div>
-            <div v-show="status_is_mute" class="soft-function" :class="{disabled:!status_is_mute}" @click="unmute">
-                <div class="icon"><i class="kfont">&#xe636;</i></div>
-                <div class="text">取消静音</div>
-            </div>
-        </div>
-
-        <div class="soft-function diafunction" :class="{disabled:!status_is_login || status_is_ring || status_is_call }"
+        <div class="soft-function" :class="{disabled:!status_is_login || status_is_ring || status_is_call }"
              @click="makeCall">
             <div class="icon"><i class="kfont">&#xe670;</i></div>
             <div class="text">拨打</div>
@@ -76,7 +65,7 @@
             </div>
         </div>
 
-        <div class="soft-function disabled" id="softphone-trans">
+        <div class="soft-function disabled">
             <div class="icon"><i class="kfont">&#xe663;</i></div>
             <div class="text">转接</div>
         </div>
@@ -230,7 +219,6 @@
                 status_is_ring: false,//是否在振铃中
                 status_is_call: false,//是否在拨打中
                 status_is_hold: false,//是否在保持中
-                status_is_mute: false,//是否在静音中
 
                 call_type: '',//呼叫方向
 
@@ -273,12 +261,6 @@
             answer() {
                 console.log("点击应答按钮")
                 Ctibar.answer()
-            },
-            mute() {
-                Ctibar.mute()
-            },
-            unmute() {
-                Ctibar.unmute()
             },
             hold() {
                 console.log("点击保持按钮")
