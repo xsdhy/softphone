@@ -86,6 +86,16 @@ let currentCallId;
 
 let reRegisterTimeInter;
 
+
+
+let turnServer={
+    type:"stun",
+    host:"stun.rongeke.com:3478",
+    username: 'admin',
+    credential: 'password',
+    credentialType: 'password'
+}
+
 //清理全局变量
 const cleanGlobalCallData = () => {
     outgoingSession = null
@@ -347,9 +357,7 @@ const makecall = (phone) => {
             sessionTimersExpires: 120,
             pcConfig: {
                 // iceTransportPolicy: "relay",
-                iceServers: [
-                    {urls: ['stun:stun.rongeke.com:3478']},
-                ]
+                iceServers: getTurnServer()
             }
         })
         //设置当前通话的session
@@ -363,6 +371,22 @@ const makecall = (phone) => {
 
 }
 
+//获取turn
+const getTurnServer = ()=>{
+    if (turnServer.host === ""){
+        return null
+    }
+    if (turnServer.type==="stun"){
+        return [{urls: ['stun:'+turnServer.host]} ]
+    }
+    return [{
+        urls: ['turn:'+turnServer.host],
+        username: turnServer.username,
+        credential: turnServer.password,
+        credentialType: turnServer.credentialType
+    }]
+}
+
 //应答
 const answer = () => {
     if (currentSession && currentSession.isInProgress()) {
@@ -370,15 +394,7 @@ const answer = () => {
             mediaConstraints: constraints,
             pcConfig: {
                 // iceTransportPolicy: "relay",
-                iceServers: [
-                    {urls: ['stun:stun.rongeke.com:3478']},
-                    // {
-                    //     urls: ['turn:stun.rongeke.com:3478'],
-                    //     username: 'admin',
-                    //     credential: 'password',
-                    //     credentialType: 'password'
-                    // },
-                ]
+                iceServers: getTurnServer()
             }
         })
     } else {

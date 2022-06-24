@@ -6,10 +6,12 @@
     <script src="/ctibar.js"></script>
     <link rel="stylesheet" href="./static/css/my.css">
     <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.js"></script>
-
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vConsole/3.12.1/vconsole.min.js" type="application/javascript"></script>
     <link rel="stylesheet"
           href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/theme-chalk/index.min.css">
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/index.min.js"></script>
+
+
 </head>
 
 <body>
@@ -80,8 +82,6 @@
                 <div class="text">登出</div>
             </div>
         </div>
-
-
     </div>
 
 
@@ -194,10 +194,17 @@
         </el-tab-pane>
     </el-tabs>
 
+
 </div>
 </body>
 
 <script>
+    //移动设备打开调试
+    const device = navigator.userAgent
+    if ( device.indexOf('Android') > -1 || device.indexOf('iPhone') > -1 || device.indexOf('iPad') > -1 || device.indexOf('ios') > -1) {
+        var vConsole = new VConsole();
+    }
+
     var app = new Vue({
         el: '#app',
         data() {
@@ -232,15 +239,16 @@
                 calltimeinter: null,//计时器-定时器,
 
                 history_accounts: [],//历史账号列表
+                lastAccount:"",//最后一次使用的账号配置
 
                 networkSpeed: 0,//网速
                 testMicrophoneOb: null,
                 testMicrophoneVolume: 0,
-                mediaDevices: null
+                mediaDevices: null,
             }
         },
         created() {
-            console.log("v1.0.2");
+            console.log("v1.1.0");
             this.init_history_accounts();
             this.phone_number=localStorage.getItem("phone_number")
 
@@ -257,7 +265,6 @@
                 console.log("点击退出按钮")
                 Ctibar.unregister()
             },
-
             answer() {
                 console.log("点击应答按钮")
                 Ctibar.answer()
@@ -348,8 +355,6 @@
                         console.log("未处理事件")
                 }
             },
-
-
             //启动计时器
             startTimerCall() {
                 if (this.calltimeinter) {
@@ -386,8 +391,6 @@
                 }
                 this.calltime = hour + ":" + min + ":" + sec
             },
-
-
             //播放挂机铃声
             playHangupMedia() {
                 const _this = this;
@@ -426,12 +429,29 @@
                 }
             },
 
+            //初始化历史账号，每次页面重新打开的时候执行
             init_history_accounts() {
                 let history_accounts = localStorage.getItem("history_accounts")
                 if (null != history_accounts) {
                     this.history_accounts = JSON.parse(history_accounts)
                 }
-                this.use_history_accounts(this.history_accounts[0])
+                if (this.history_accounts.length<=0){
+                    return;
+                }
+
+                //查看最后一次使用的账号是什么，若有则使用
+                let lastAccount=localStorage.getItem("lastAccount")
+                if (lastAccount===""){
+                    this.use_history_accounts(this.history_accounts[0])
+                    return
+                }
+                for (let index = 0; index < this.history_accounts.length; index++) {
+                    let id = this.history_accounts[index].extNo+"@"+this.history_accounts[index].host+":"+this.history_accounts[index].port;
+                    if (lastAccount===id) {
+                        this.use_history_accounts(this.history_accounts[index])
+                        break
+                    }
+                }
             },
             //使用历史账号
             use_history_accounts(item) {
@@ -449,13 +469,12 @@
                     localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
                 }
             },
-            //保存账号
+            //保存账号:登录成功的时候执行
             save_history_accounts() {
                 let is_add = true;
                 for (let index = 0; index < this.history_accounts.length; index++) {
                     if (this.history_accounts[index].host === this.configuration.host && this.history_accounts[index].extNo === this.configuration.extNo) {
                         is_add = false;
-
                         this.history_accounts[index].host = this.configuration.host;
                         this.history_accounts[index].port = this.configuration.port;
                         this.history_accounts[index].proto = this.configuration.proto;
@@ -474,7 +493,7 @@
                         extPwd: this.configuration.extPwd,
                     })
                 }
-
+                localStorage.setItem("lastAccount", this.configuration.extNo+"@"+this.configuration.host+":"+this.configuration.port)
                 localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
             },
 
