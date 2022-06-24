@@ -49,12 +49,12 @@
         </div>
 
 
-        <div class="soft-function" :class="{disabled:!status_is_login || status_is_ring || status_is_call }"
+        <div v-if="!status_is_call && status_is_login" class="soft-function" :class="{disabled:!status_is_login || status_is_ring || status_is_call }"
              @click="makeCall">
             <div class="icon"><i class="kfont">&#xe670;</i></div>
             <div class="text">拨打</div>
         </div>
-        <div class="soft-function" :class="{disabled:!status_is_call}">
+        <div v-if="status_is_call" class="soft-function" :class="{disabled:!status_is_call}">
             <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
                 <div class="icon"><i class="kfont">&#xe647;</i></div>
                 <div class="text">保持</div>
@@ -65,12 +65,12 @@
             </div>
         </div>
 
-        <div class="soft-function disabled">
+        <div v-if="status_is_call" class="soft-function disabled">
             <div class="icon"><i class="kfont">&#xe663;</i></div>
             <div class="text">转接</div>
         </div>
 
-        <div class="soft-function">
+        <div v-if="!status_is_call" class="soft-function">
             <div v-if="!status_is_login" class="soft-function login" @click="login">
                 <div class="icon"><i class="kfont">&#xe61f;</i></div>
                 <div class="text">登录</div>
@@ -289,7 +289,6 @@
                 console.log("收到事件", event, data);
                 switch (event) {
                     case "REGISTERED":
-
                         this.status_is_login = true;
                         break;
                     case "UNREGISTERED":
