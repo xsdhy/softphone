@@ -1,32 +1,51 @@
-# 话务条
+# 话务条([demo](https://softphone.xsdhy.com/))
 本项目为基于JsSIP实现的webrtc软电话条、话务条，可以对接opensips、freeswitch。
 
-在线地址: [https://softphone.xsdhy.com](https://softphone.xsdhy.com/)
+## 使用说明
 
-## 安装构建
+index.html只是调用示例，src/index.js才是sdk源文件  
+通过以下方式构建
 ```
-yarn
-yarn build
+yarn && yarn build
 ```
+构建后会在dist目录下生成ctibar.js，引入到自己项目中即可
+
 
 ## 文档说明
-### 1.初始化SDK 
-初始化加载sdk
 
-#### 参数说明：
+提供如下方法：
 
-| 参数 | 说明 | 是否必填 |
-| --- | --- | ----- |
-| host | 服务器地址 | 必填项 |
-| port | 服务器端口 | 必填项 |
-| proto | bool类型 true/false，使用wss或者ws协议 | 不填，默认为ws协议 |
-| extNo | 分机账号 | 必填项 |
-| extPwd | 分机密码 | 必填项 |
-| stateEventListener | 状态回调函数方法 参照文档最下方stateEventListener详细说明 | 需注入状态回调 |
-| autoRegister | bool类型 true/false，initSDK调用后是否自动注册 | 不填默认为false |
+| 函数    | 调用方式和                         | 说明         |
+|-------|-------------------------------|------------|
+| 初始化   | Ctibar.initSDK(config)        |            |
+| 销毁SDK | Ctibar.cleanSDK()             |            |
+| 注册    | Ctibar.register()             |            |
+| 取消注册  | Ctibar.unregister()           |            |
+| 呼叫请求  | Ctibar.Ctibar.makecall(phone) | 真实外呼需要传的参数 |
+| 挂断电话  | Ctibar.hangup()               |            |
+| 应答接听  | Ctibar.answer()               |            |
+| 保持    | Ctibar.hold()                 |            |
+| 取消保持  | Ctibar.unhold()               |            |
+| 转接通话  | Ctibar.transfer(phone)        |            |
 
+以下对几个特殊的方法进行说明：
 
-#### 使用样例：
+### 初始化SDK
+
+初始化加载sdk的参数说明：
+
+| 参数                 | 说明                                     | 是否必填       |
+|--------------------|----------------------------------------|------------|
+| host               | 服务器地址                                  | 必填项        |
+| port               | 服务器端口                                  | 必填项        |
+| proto              | bool类型 true/false，使用wss或者ws协议          | 不填，默认为ws协议 |
+| extNo              | 分机账号                                   | 必填项        |
+| extPwd             | 分机密码                                   | 必填项        |
+| stateEventListener | 状态回调函数方法 参照文档最下方stateEventListener详细说明 | 需注入状态回调    |
+| autoRegister       | bool类型 true/false，initSDK调用后是否自动注册     | 不填默认为false |
+
+使用样例：
+
 ```
 let config = {
     host: '10.133.35.89',
@@ -40,92 +59,9 @@ let config = {
 Ctibar.initSDK(config)
 ```
 
-### 2. 销毁SDK
-关闭销毁sdk
-
-#### 使用样例：
-```
-Ctibar.cleanSDK()
-```
-
-
-### 3. 注册
-分机注册register
-
-#### 使用样例：
-```
-Ctibar.register()
-```
-
-### 4. 取消注册
-取消分机注册
-
-#### 使用样例：
-```
-Ctibar.unregister()
-```
-
-### 5. 呼叫请求
-发起呼叫请求
-
-#### 参数说明：
-
-| 参数 | 说明 | 是否必填 |
-| --- | --- | ----- |
-| phone | 真实外呼需要传的参数，请再调用前去除不必要的字符，如空格、- 等特殊符合 | 必填项 |
-
-#### 使用样例：
-```
-Ctibar.makecall(phone)
-```
-
-### 6. 挂断电话
-挂断电话
-
-#### 使用样例：
-```
-Ctibar.hangup()
-```
-
-### 7. 应答接听
-接起通话
-
-#### 使用样例：
-```
-Ctibar.answer()
-```
-
-### 8. 保持
-通话保持，一端播放音乐
-
-#### 使用样例：
-```
-Ctibar.hold()
-```
-
-### 9. 取消保持
-取消通话保持
-
-#### 使用样例：
-```
-Ctibar.unhold()
-```
-
-### 10. 转接通话
-通话转接,挂断自己转接至第三方
-
-#### 参数说明：
-
-| 参数 | 说明 | 是否必填 |
-| --- | --- | ----- |
-| phone | 真实转接需要传的参数，请再调用前去除不必要的字符，如空格、- 等特殊符合 | 必填项 |
-
-#### 使用样例：
-```
-Ctibar.transfer(phone)
-```
 
 ### 状态回调（stateEventListener）
+
 前端注入状态回调函数，通过状态回调 控制页面按钮显示
 
 stateEventListener回调参数为 event, data

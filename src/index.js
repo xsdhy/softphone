@@ -90,8 +90,8 @@ let reRegisterTimeInter;
 
 let turnServer={
     type:"stun",
-    host:"stun.rongeke.com:3478",
-    username: 'admin',
+    host:"stun.xsdhy.com:3478",
+    username: 'xsdhy',
     credential: 'password',
     credentialType: 'password'
 }
@@ -135,6 +135,12 @@ const initSDK = (config) => {
     let domain = host;
     if (undefined !== config.domain && config.domain.length > 0) {
         domain = config.domain;
+    }
+    if (config.stun && config.stun.type && config.stun.host){
+        turnServer.type=config.stun.type
+        turnServer.host=config.stun.host
+        turnServer.username=config.stun.username
+        turnServer.credential=config.stun.password
     }
 
     //注入状态回调函数
@@ -382,7 +388,7 @@ const getTurnServer = ()=>{
     return [{
         urls: ['turn:'+turnServer.host],
         username: turnServer.username,
-        credential: turnServer.password,
+        credential: turnServer.credential,
         credentialType: turnServer.credentialType
     }]
 }
