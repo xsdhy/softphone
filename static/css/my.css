@@ -88,16 +88,3 @@
     margin: 0 !important;
 }
 
-
-/*参数设置*/
-.my-softphone .setting {
-    width: 100%;
-    max-width: 600px;
-    margin-top: 20px;
-}
-.my-softphone .setting div {
-    margin: 5px auto;
-}
-.my-softphone .setting input {
-    width: 70%;
-}

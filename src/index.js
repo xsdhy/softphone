@@ -162,7 +162,6 @@ const initSDK = (config) => {
         JsSIP.debug.disable()
     }
 
-
     //坐席号码
     localAgent = extNo
     // JsSIP.C.SESSION_EXPIRES=120,JsSIP.C.MIN_SESSION_EXPIRES=120;
@@ -190,24 +189,17 @@ const initSDK = (config) => {
             ua.register();
         }
     })
-
     //websocket连接失败
     ua.on('disconnected', (e) => {
-        console.log("disconnected:",e)
         //ua.stop()
         onChangeState(DISCONNECTED)
     })
-
     //注册成功
     ua.on('registered', (e) => {
-        console.log("registered:",e)
-
         //sip注册心跳机制
         if (!reRegisterTimeInter){
-            // setInterval(reRegister, (configuration.register_expires-100)*1000)
             setInterval(reRegister, 50*1000)
         }
-
         onChangeState(REGISTERED)
     })
     //取消注册
@@ -447,7 +439,6 @@ const mute = () => {
         return
     }
     currentSession.mute();
-
 }
 
 //取消静音
@@ -456,7 +447,6 @@ const unmute = () => {
         return
     }
     currentSession.unmute();
-
 }
 
 // 转接
@@ -467,13 +457,9 @@ const transfer = (phone) => {
     currentSession.refer(phone)
 }
 
-const dtmf = (tone)=>{
-    if (currentSession && currentSession.isInProgress()) {
-        console.log("按键了",tone)
-        currentSession.sendDTMF(tone,{
-            'duration': 160,
-            'interToneGap': 1200,
-            'extraHeaders': []})
+const sendDtmf = (tone)=>{
+    if (currentSession) {
+        currentSession.sendDTMF(tone,{'duration': 160, 'interToneGap': 1200, 'extraHeaders': []})
     }
 }
 
@@ -643,7 +629,7 @@ module.exports = {
     hold,
     unhold,
     transfer,
-    dtmf,
+    sendDtmf,
 
     testNetwork,
     testMicrophone,

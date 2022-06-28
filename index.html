@@ -49,12 +49,6 @@
             <div class="text">挂断</div>
         </div>
 
-
-        <div v-if="!status_is_call && status_is_login" class="soft-function" :class="{disabled:!status_is_login || status_is_ring || status_is_call }"
-             @click="makeCall">
-            <div class="icon"><i class="kfont">&#xe670;</i></div>
-            <div class="text">拨打</div>
-        </div>
         <div v-if="status_is_call" class="soft-function" :class="{disabled:!status_is_call}">
             <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
                 <div class="icon"><i class="kfont">&#xe647;</i></div>
@@ -84,7 +78,36 @@
     </div>
 
 
-    <el-tabs class="config" type="border-card" v-model="activeTabName">
+    <el-card v-show="status_is_login" class="config">
+        <div>
+            <el-input style="max-width: 80%" v-model="phone_number" placeholder="请输入外呼号码" ></el-input>
+            <el-button :disabled="!status_is_login || status_is_ring || status_is_call" type="primary" icon="el-icon-phone" @click="makeCall"></el-button>
+        </div>
+        <div>
+            <el-row>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(1)">1</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(2)">2</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(3)">3</el-button></el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(4)">4</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(5)">5</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(6)">6</el-button></el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(7)">7</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(8)">8</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(9)">9</el-button></el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber('*')">*</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(0)">0</el-button></el-col>
+                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber('#')">#</el-button></el-col>
+            </el-row>
+        </div>
+    </el-card>
+
+    <el-tabs v-show="!status_is_login" class="config" type="border-card" v-model="activeTabName">
         <el-tab-pane label="参数设置" name="base">
             <div>
                 <el-form ref="form" size="mini" label-position="left" label-width="80px">
@@ -212,8 +235,6 @@
             </div>
         </el-tab-pane>
     </el-tabs>
-
-
 </div>
 </body>
 
@@ -277,7 +298,6 @@
             console.log("v1.1.0");
             let account = this.getQueryVariable("account")
 
-
             this.init_history_accounts();
             this.phone_number=localStorage.getItem("phone_number")
 
@@ -320,6 +340,15 @@
                 console.log("点击挂断按钮");
                 Ctibar.hangup()
             },
+            //按键
+            pressNumber(tone){
+                //在通话中就发送
+                if (this.status_is_call){
+                    Ctibar.sendDtmf(tone);
+                }else {
+                    this.phone_number=this.phone_number+tone
+                }
+            },
             //事件回调
             stateEventListener(event, data) {
                 console.log("收到事件", event, data);
@@ -348,6 +377,7 @@
                         this.stopPlayRingMedia();
                         this.status_is_ring = false;
                         this.status_is_call = true;
+                        this.status_is_hold = false;
                         break;
                     case "CALL_END":
                         this.stopTimerCall();
@@ -496,9 +526,11 @@
                     this.configuration.stun = item.stun;
                 }
             },
+            //分享历史账号
             shareAccount(item){
                 return window.btoa(JSON.stringify(item))
             },
+            //删除历史账号
             del_history_accounts(i) {
                 if (this.history_accounts.length > 0) {
                     this.history_accounts.splice(i)
@@ -534,8 +566,6 @@
                 localStorage.setItem("lastAccount", this.configuration.extNo+"@"+this.configuration.host+":"+this.configuration.port)
                 localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
             },
-
-
             //麦克风音量检测-开始
             testMicrophoneHandelStart() {
                 Ctibar.testMicrophone((volume) => {
@@ -552,6 +582,7 @@
                     this.testMicrophoneOb = null;
                 }
             },
+            //网速检测
             testNetworkHandel() {
                 //window.location.host+'/static/images/test-network-speed.jpg'
                 Ctibar.testNetwork().then((networkSpeed) => {
@@ -559,6 +590,7 @@
                     console.log("测速:", this.getFileSize(networkSpeed))
                 });
             },
+            //文件大小可视化
             getFileSize(size) {//把字节转换成正常文件大小
                 if (!size) return "";
                 size = size * 1024;
@@ -573,7 +605,8 @@
                     return (size / Math.pow(num, 3)).toFixed(2) + "G/S"; //G
                 return (size / Math.pow(num, 4)).toFixed(2) + "T/S"; //T
             },
-             getQueryVariable(variable) {
+            //获取get参数
+            getQueryVariable(variable) {
                 let query = window.location.search.substring(1);
                  let vars = query.split("&");
                 for (let i=0;i<vars.length;i++) {
@@ -589,23 +622,18 @@
 
 
 <style>
+    .number-card-button{
+        width: 100%;
+    }
     .config {
-        margin-top: 110px;
+        margin-top: 3.8rem;
         max-width: 500px;
     }
-
-    .config strong {
-        font-weight: 500;
-        margin-right: 20px;
-    }
-
     /*表单行间距缩小*/
     .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item {
         margin-bottom: 5px;
     }
-
     .el-form-item {
         margin-bottom: 5px;
     }
-
 </style>
