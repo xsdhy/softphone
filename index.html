@@ -21,26 +21,26 @@
     <el-card class="my-softphone" :body-style="{padding: '0px'}">
         <div>
             <div class="status">
-                    <div v-if="!status_is_call && !status_is_ring">
-                        <div v-show="!status_is_login" style="padding:10px 0 0 0px;">
+                    <div v-if="!statusIsCall && !statusIsring">
+                        <div v-show="!statusIsLogin" style="padding:10px 0 0 0px;">
                             <el-badge is-dot type="info" class="item"></el-badge>
                             分机未登录
                         </div>
-                        <div v-show="status_is_login" style="padding:10px 0 0 0px;">
+                        <div v-show="statusIsLogin" style="padding:10px 0 0 0px;">
                             <el-badge is-dot type="success" class="item"></el-badge>
-                            在线:<span class="number">{{ ext_number }}</span>
+                            在线:<span class="number">{{ agentNo }}</span>
                         </div>
                     </div>
-                    <div v-show="status_is_call || status_is_ring">
+                    <div v-show="statusIsCall || statusIsring">
                         <div class="text">号码：<span class="number">{{ discallee }}</span></div>
-                        <div class="text">时长：<span class="number">{{ calltime }}</span></div>
+                        <div class="text">时长：<span class="number">{{ callTime }}</span></div>
                     </div>
                 </div>
 
             <div class="btn">
 
-                <div v-if="!status_is_call">
-                    <div v-if="!status_is_login" class="soft-function" @click="login">
+                <div v-if="!statusIsCall">
+                    <div v-if="!statusIsLogin" class="soft-function" @click="login">
                         <iconpark-icon name="checkIn-qianru"></iconpark-icon>
                         <div class="text">登录</div>
                     </div>
@@ -50,28 +50,28 @@
                     </div>
                 </div>
 
-                <div v-if="status_is_call" class="soft-function disabled">
+                <div v-if="statusIsCall" class="soft-function disabled">
                     <iconpark-icon name="transfer-zhuanjie"></iconpark-icon>
                     <div class="text">转接</div>
                 </div>
 
-                <div v-if="status_is_call" :class="{disabled:!status_is_call}">
-                    <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
+                <div v-if="statusIsCall" :class="{disabled:!statusIsCall}">
+                    <div v-if="!statusIsHold" class="soft-function" :class="{hold:!statusIsHold}" @click="hold">
                         <iconpark-icon name="keepHold-baochi"></iconpark-icon>
                         <div class="text">保持</div>
                     </div>
-                    <div v-else class="soft-function" :class="{unhold:status_is_hold}" @click="unhold">
+                    <div v-else class="soft-function" :class="{unhold:statusIsHold}" @click="unhold">
                         <iconpark-icon name="takeBack-jiehui"></iconpark-icon>
                         <div class="text">取回</div>
                     </div>
                 </div>
 
-                <div class="soft-function" :class="{disabled:!(status_is_ring || status_is_call)}" @click="hungup">
+                <div class="soft-function" :class="{disabled:!(statusIsring || statusIsCall)}" @click="hungup">
                     <iconpark-icon name="phone-off"></iconpark-icon>
                     <div class="text">挂断</div>
                 </div>
 
-                <div class="soft-function" :class="{disabled:!(status_is_ring && 'inbound' === call_type)}"
+                <div class="soft-function" :class="{disabled:!(statusIsring && 'inbound' === callDirection)}"
                      @click="answer">
                     <iconpark-icon name="phone-call"></iconpark-icon>
                     <div class="text">接听</div>
@@ -80,10 +80,10 @@
         </div>
     </el-card>
 
-    <el-card v-show="status_is_login" class="config">
+    <el-card v-show="statusIsLogin" class="config">
         <div>
-            <el-input style="max-width: 80%" v-model="phone_number" placeholder="请输入外呼号码"></el-input>
-            <el-button :disabled="!status_is_login || status_is_ring || status_is_call" type="primary"
+            <el-input style="max-width: 80%" v-model="callPhoneNumber" placeholder="请输入外呼号码"></el-input>
+            <el-button :disabled="!statusIsLogin || statusIsring || statusIsCall" type="primary"
                        icon="el-icon-phone" @click="makeCall"></el-button>
         </div>
         <div>
@@ -134,7 +134,7 @@
         </div>
     </el-card>
 
-    <el-tabs v-show="!status_is_login" class="config" type="border-card" v-model="activeTabName">
+    <el-tabs v-show="!statusIsLogin" class="config" type="border-card" v-model="activeTabName">
         <el-tab-pane label="参数设置" name="base">
             <div>
                 <el-form ref="form" size="mini" label-position="left" label-width="80px">
@@ -174,10 +174,10 @@
                 </el-form>
             </div>
 
-            <div v-if="history_accounts.length>0">
+            <div v-if="historyAccounts.length>0">
                 <el-divider content-position="left">历史账号</el-divider>
                 <div>
-                    <el-table :data="history_accounts" stripe style="width: 100%" size="mini" :show-header="false">
+                    <el-table :data="historyAccounts" stripe style="width: 100%" size="mini" :show-header="false">
                         <el-table-column type="expand" width="15">
                             <template slot-scope="props">
                                 <el-descriptions :column="1" size="mini" border>
@@ -203,11 +203,11 @@
                         <el-table-column label="操作" width="136">
                             <template slot-scope="scope">
                                 <el-button-group>
-                                    <el-button size="mini" type="primary" :disabled="status_is_login"
-                                               @click="use_history_accounts(scope.row)">使用
+                                    <el-button size="mini" type="primary" :disabled="statusIsLogin"
+                                               @click="useHistoryAccounts(scope.row)">使用
                                     </el-button>
-                                    <el-button size="mini" type="danger" :disabled="status_is_login"
-                                               @click="del_history_accounts(scope.$index)">删除
+                                    <el-button size="mini" type="danger" :disabled="statusIsLogin"
+                                               @click="delHistoryAccounts(scope.$index)">删除
                                     </el-button>
                                 </el-button-group>
                             </template>
@@ -282,23 +282,23 @@
                     stateEventListener: this.stateEventListener
                 },
 
-                status_is_login: false,//是否登陆
-                status_is_ring: false,//是否在振铃中
-                status_is_call: false,//是否在拨打中
-                status_is_hold: false,//是否在保持中
+                statusIsLogin: false,//是否登陆
+                statusIsring: false,//是否在振铃中
+                statusIsCall: false,//是否在拨打中
+                statusIsHold: false,//是否在保持中
 
-                call_type: '',//呼叫方向
+                callDirection: '',//呼叫方向
 
-                ext_number: "",//分机号
+                agentNo: "",//分机号
                 discaller: "",//主叫号码
                 discallee: "",//被叫号码
-                phone_number: "",//呼出号码
+                callPhoneNumber: "",//呼出号码
 
                 durtime: 0,//计时器
-                calltime: '00:00:00',//计时器-格式化
-                calltimeinter: null,//计时器-定时器,
+                callTime: '00:00:00',//计时器-格式化
+                callTimeInter: null,//计时器-定时器,
 
-                history_accounts: [],//历史账号列表
+                historyAccounts: [],//历史账号列表
                 lastAccount: "",//最后一次使用的账号配置
 
                 networkSpeed: 0,//网速
@@ -311,8 +311,8 @@
             console.log("v1.1.0");
             let account = this.getQueryVariable("account")
 
-            this.init_history_accounts();
-            this.phone_number = localStorage.getItem("phone_number")
+            this.initHistoryAccounts();
+            this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
 
             Ctibar.getMediaDeviceInfo().then((res) => {
                 this.mediaDevices = res;
@@ -341,13 +341,13 @@
             },
             makeCall() {
                 console.log("点击拨打按钮")
-                if (this.phone_number.length <= 2) {
+                if (this.callPhoneNumber.length <= 2) {
                     alert("请输入要拨打的号码");
                     return
                 }
-                localStorage.setItem("phone_number", this.phone_number)
-                this.discallee = this.phone_number
-                Ctibar.makecall(this.phone_number.trim());
+                localStorage.setItem("callPhoneNumber", this.callPhoneNumber)
+                this.discallee = this.callPhoneNumber
+                Ctibar.makecall(this.callPhoneNumber.trim());
             },
             hungup() {
                 console.log("点击挂断按钮");
@@ -356,10 +356,10 @@
             //按键
             pressNumber(tone) {
                 //在通话中就发送
-                if (this.status_is_call) {
+                if (this.statusIsCall) {
                     Ctibar.sendDtmf(tone);
                 } else {
-                    this.phone_number = this.phone_number + tone
+                    this.callPhoneNumber = this.callPhoneNumber + tone
                 }
             },
             //事件回调
@@ -367,43 +367,43 @@
                 console.log("收到事件", event, data);
                 switch (event) {
                     case "REGISTERED":
-                        this.status_is_login = true;
+                        this.statusIsLogin = true;
                         break;
                     case "UNREGISTERED":
-                        this.status_is_login = false;
-                        this.status_is_hold = false;
-                        this.status_is_ring = false;
-                        this.status_is_call = false;
+                        this.statusIsLogin = false;
+                        this.statusIsHold = false;
+                        this.statusIsring = false;
+                        this.statusIsCall = false;
                         break;
                     case "INCOMING_CALL":
                         this.playRingMedia()
                     case "OUTGOING_CALL":
                         console.log("来电", data.direction)
                         this.startTimerCall();
-                        this.status_is_ring = true;
-                        this.call_type = data.direction;
+                        this.statusIsring = true;
+                        this.callDirection = data.direction;
                         this.discaller = data.otherLegNumber;
-                        this.discallee = this.ext_number;
+                        this.discallee = this.agentNo;
                         break;
                     case "IN_CALL":
                         this.startTimerCall();
                         this.stopPlayRingMedia();
-                        this.status_is_ring = false;
-                        this.status_is_call = true;
-                        this.status_is_hold = false;
+                        this.statusIsring = false;
+                        this.statusIsCall = true;
+                        this.statusIsHold = false;
                         break;
                     case "CALL_END":
                         this.stopTimerCall();
                         this.stopPlayRingMedia();
-                        this.status_is_ring = false;
-                        this.status_is_call = false;
-                        this.status_is_hold = false;
+                        this.statusIsring = false;
+                        this.statusIsCall = false;
+                        this.statusIsHold = false;
                         break;
                     case "HOLD":
-                        this.status_is_hold = true;
+                        this.statusIsHold = true;
                         break;
                     case "UNHOLD":
-                        this.status_is_hold = false;
+                        this.statusIsHold = false;
                         break;
                     case "MUTE":
                         this.status_is_mute = true;
@@ -413,8 +413,8 @@
                         break;
                     case "CONNECTED":
                         //已连接
-                        this.save_history_accounts()
-                        this.ext_number = data.localAgent;
+                        this.saveHistoryAccounts()
+                        this.agentNo = data.localAgent;
                         Ctibar.register()
                         break;
                     case "DISCONNECT":
@@ -430,20 +430,20 @@
             },
             //启动计时器
             startTimerCall() {
-                if (this.calltimeinter) {
-                    clearInterval(this.calltimeinter);
-                    this.calltime = "00:00:00";
+                if (this.callTimeInter) {
+                    clearInterval(this.callTimeInter);
+                    this.callTime = "00:00:00";
                     this.durtime = 0;
                 }
-                this.calltimeinter = setInterval(() => {
+                this.callTimeInter = setInterval(() => {
                     this.timerCall();
                 }, 1000)
             },
             //停止计时器
             stopTimerCall() {
-                if (this.calltimeinter) {
-                    clearInterval(this.calltimeinter);
-                    this.calltime = "00:00:00";
+                if (this.callTimeInter) {
+                    clearInterval(this.callTimeInter);
+                    this.callTime = "00:00:00";
                     this.durtime = 0;
                 }
             },
@@ -462,7 +462,7 @@
                 if (hour < 10) {
                     hour = "0" + hour;
                 }
-                this.calltime = hour + ":" + min + ":" + sec
+                this.callTime = hour + ":" + min + ":" + sec
             },
             //播放挂机铃声
             playHangupMedia() {
@@ -503,31 +503,31 @@
             },
 
             //初始化历史账号，每次页面重新打开的时候执行
-            init_history_accounts() {
-                let history_accounts = localStorage.getItem("history_accounts")
-                if (null != history_accounts) {
-                    this.history_accounts = JSON.parse(history_accounts)
+            initHistoryAccounts() {
+                let historyAccounts = localStorage.getItem("historyAccounts")
+                if (null != historyAccounts) {
+                    this.historyAccounts = JSON.parse(historyAccounts)
                 }
-                if (this.history_accounts.length <= 0) {
+                if (this.historyAccounts.length <= 0) {
                     return;
                 }
 
                 //查看最后一次使用的账号是什么，若有则使用
                 let lastAccount = localStorage.getItem("lastAccount")
                 if (lastAccount === "") {
-                    this.use_history_accounts(this.history_accounts[0])
+                    this.use_historyAccounts(this.historyAccounts[0])
                     return
                 }
-                for (let index = 0; index < this.history_accounts.length; index++) {
-                    let id = this.history_accounts[index].extNo + "@" + this.history_accounts[index].host + ":" + this.history_accounts[index].port;
+                for (let index = 0; index < this.historyAccounts.length; index++) {
+                    let id = this.historyAccounts[index].extNo + "@" + this.historyAccounts[index].host + ":" + this.historyAccounts[index].port;
                     if (lastAccount === id) {
-                        this.use_history_accounts(this.history_accounts[index])
+                        this.use_historyAccounts(this.historyAccounts[index])
                         break
                     }
                 }
             },
             //使用历史账号
-            use_history_accounts(item) {
+            use_historyAccounts(item) {
                 console.log("使用历史账号:", item)
                 this.configuration.host = item.host;
                 this.configuration.port = item.port;
@@ -544,29 +544,29 @@
                 return window.btoa(JSON.stringify(item))
             },
             //删除历史账号
-            del_history_accounts(i) {
-                if (this.history_accounts.length > 0) {
-                    this.history_accounts.splice(i)
-                    localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
+            delHistoryAccounts(i) {
+                if (this.historyAccounts.length > 0) {
+                    this.historyAccounts.splice(i)
+                    localStorage.setItem("historyAccounts", JSON.stringify(this.historyAccounts))
                 }
             },
             //保存账号:登录成功的时候执行
-            save_history_accounts() {
+            saveHistoryAccounts() {
                 let is_add = true;
-                for (let index = 0; index < this.history_accounts.length; index++) {
-                    if (this.history_accounts[index].host === this.configuration.host && this.history_accounts[index].extNo === this.configuration.extNo) {
+                for (let index = 0; index < this.historyAccounts.length; index++) {
+                    if (this.historyAccounts[index].host === this.configuration.host && this.historyAccounts[index].extNo === this.configuration.extNo) {
                         is_add = false;
-                        this.history_accounts[index].host = this.configuration.host;
-                        this.history_accounts[index].port = this.configuration.port;
-                        this.history_accounts[index].proto = this.configuration.proto;
-                        this.history_accounts[index].domain = this.configuration.domain;
-                        this.history_accounts[index].extNo = this.configuration.extNo;
-                        this.history_accounts[index].extPwd = this.configuration.extPwd;
-                        this.history_accounts[index].stun = this.configuration.stun;
+                        this.historyAccounts[index].host = this.configuration.host;
+                        this.historyAccounts[index].port = this.configuration.port;
+                        this.historyAccounts[index].proto = this.configuration.proto;
+                        this.historyAccounts[index].domain = this.configuration.domain;
+                        this.historyAccounts[index].extNo = this.configuration.extNo;
+                        this.historyAccounts[index].extPwd = this.configuration.extPwd;
+                        this.historyAccounts[index].stun = this.configuration.stun;
                     }
                 }
                 if (is_add) {
-                    this.history_accounts.push({
+                    this.historyAccounts.push({
                         host: this.configuration.host,
                         port: this.configuration.port,
                         proto: this.configuration.proto,
@@ -577,7 +577,7 @@
                     })
                 }
                 localStorage.setItem("lastAccount", this.configuration.extNo + "@" + this.configuration.host + ":" + this.configuration.port)
-                localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
+                localStorage.setItem("historyAccounts", JSON.stringify(this.historyAccounts))
             },
             //麦克风音量检测-开始
             testMicrophoneHandelStart() {
