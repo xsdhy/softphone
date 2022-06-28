@@ -15,68 +15,76 @@
 
 <body>
 <div id="app">
-    <div class="my-softphone">
-        <div class="softphone-stream" style="display:none;">
-            <video id="audioView" autoplay></video>
-        </div>
-
-        <div class="status">
-            <div v-if="!status_is_call && !status_is_ring">
-                <div v-show="!status_is_login" style="padding:10px 0 0 0px;">
-                    分机未登录
-                </div>
-                <div v-show="status_is_login" style="padding:10px 0 0 0px;">
-                    分机：<span class="number">{{ ext_number }}</span> 在线
-                </div>
-            </div>
-            <div v-else>
-                <div v-show="status_is_call || status_is_ring">
-                    <div class="text">号码：<span class="number">{{ discaller }}</span>-><span
-                            class="number">{{ discallee }}</span></div>
-                    <div class="text">时长：<span class="number">{{ calltime }}</span></div>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="soft-function" :class="{disabled:!(status_is_ring && 'inbound' === call_type)}" @click="answer">
-            <div class="icon"><i class="kfont">&#xe698;</i></div>
-            <div class="text">接听</div>
-        </div>
-
-        <div class="soft-function" :class="{disabled:!(status_is_ring || status_is_call)}" @click="hungup">
-            <div class="icon"><i class="kfont">&#xe60e;</i></div>
-            <div class="text">挂断</div>
-        </div>
-
-        <div v-if="status_is_call" class="soft-function" :class="{disabled:!status_is_call}">
-            <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
-                <div class="icon"><i class="kfont">&#xe647;</i></div>
-                <div class="text">保持</div>
-            </div>
-            <div v-else class="soft-function" :class="{unhold:status_is_hold}" @click="unhold">
-                <div class="icon"><i class="kfont">&#xe605;</i></div>
-                <div class="text">取回</div>
-            </div>
-        </div>
-
-        <div v-if="status_is_call" class="soft-function disabled">
-            <div class="icon"><i class="kfont">&#xe663;</i></div>
-            <div class="text">转接</div>
-        </div>
-
-        <div v-if="!status_is_call" class="soft-function">
-            <div v-if="!status_is_login" class="soft-function login" @click="login">
-                <div class="icon"><i class="kfont">&#xe61f;</i></div>
-                <div class="text">登录</div>
-            </div>
-            <div v-else class="soft-function logout" @click="logout">
-                <div class="icon"><i class="kfont">&#xe611;</i></div>
-                <div class="text">登出</div>
-            </div>
-        </div>
+    <div style="display:none;">
+        <video id="audioView" autoplay></video>
     </div>
 
+
+    <el-card class="my-softphone" :body-style="{padding: '0px'}">
+        <el-row>
+            <el-col :span="12">
+                <div class="status">
+<!--                    <el-tag :type="item.type" effect="dark">{{ item.label }}</el-tag>-->
+
+                    <div v-if="!status_is_call && !status_is_ring">
+                        <div v-show="!status_is_login" style="padding:10px 0 0 0px;">
+                            分机未登录
+                        </div>
+                        <div v-show="status_is_login" style="padding:10px 0 0 0px;">
+                            分机：<span class="number">{{ ext_number }}</span> 在线
+                        </div>
+                    </div>
+                    <div v-else>
+                        <div v-show="status_is_call || status_is_ring">
+                            <div class="text">号码：<span class="number">{{ discaller }}</span>-><span
+                                    class="number">{{ discallee }}</span></div>
+                            <div class="text">时长：<span class="number">{{ calltime }}</span></div>
+                        </div>
+                    </div>
+                </div>
+            </el-col>
+
+            <el-col :span="12">
+                <div class="soft-function" :class="{disabled:!(status_is_ring && 'inbound' === call_type)}" @click="answer">
+                    <i class="el-icon-phone-outline"></i>
+                    <div class="text">接听</div>
+                </div>
+
+                <div class="soft-function" :class="{disabled:!(status_is_ring || status_is_call)}" @click="hungup">
+                    <i class="el-icon-circle-close"></i>
+                    <div class="text">挂断</div>
+                </div>
+
+                <div v-if="status_is_call" class="soft-function" :class="{disabled:!status_is_call}">
+                    <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
+                        <i class="el-icon-circle-close"></i>
+                        <div class="text">保持</div>
+                    </div>
+                    <div v-else class="soft-function" :class="{unhold:status_is_hold}" @click="unhold">
+                        <i class="el-icon-circle-close"></i>
+                        <div class="text">取回</div>
+                    </div>
+                </div>
+
+                <div v-if="status_is_call" class="soft-function disabled">
+                    <i class="el-icon-circle-close"></i>
+                    <div class="text">转接</div>
+                </div>
+
+                <div v-if="!status_is_call" class="soft-function">
+                    <div v-if="!status_is_login" class="soft-function" @click="login">
+                        <i class="el-icon-s-promotion"></i>
+                        <div class="text">登录</div>
+                    </div>
+                    <div v-else class="soft-function" @click="logout">
+                        <i class="el-icon-circle-close"></i>
+                        <div class="text">登出</div>
+                    </div>
+                </div>
+            </el-col>
+
+        </el-row>
+    </el-card>
 
     <el-card v-show="status_is_login" class="config">
         <div>
@@ -626,7 +634,7 @@
         width: 100%;
     }
     .config {
-        margin-top: 3.8rem;
+        margin-top: 0.5rem;
         max-width: 500px;
     }
     /*表单行间距缩小*/
