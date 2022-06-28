@@ -1,11 +1,5 @@
-/***
- * 基于jssip v3.9.0 实现webrtc SDK
- * 开发时间: 2022-03-08
- * Auth Shen TianYu
- */
 var JsSIP = require('jssip')
 const {newUUID} = require("jssip/lib/Utils");
-
 
 //状态常量
 const MICERROR = "MICERROR"                 //麦克风检测异常
@@ -239,8 +233,6 @@ const initSDK = (config) => {
             direction = 'outbound'
             currentEvent = OUTGOING_CALL
         }
-        console.log("电话号码",data.request.from._uri.user)
-
         s.on('progress', (evt) => {
             //console.info('通话振铃-->通话振铃')
             //s.remote_identity.display_name
@@ -287,21 +279,18 @@ const initSDK = (config) => {
             if (iceCandidateTimeout != null) {
                 clearTimeout(iceCandidateTimeout);
             }
-            console.log("网卡检测:",evt.candidate.type)
-
             if (evt.candidate.type === "srflx" || evt.candidate.type === "relay") {
                 evt.ready();
             }
-
             iceCandidateTimeout = setTimeout(evt.ready, 1000);
         })
-
     })
 
     //启动UA
     ua.start()
 }
 
+//重新注册
 const reRegister = () => {
     if (ua.isConnected) {
         ua.register()
@@ -329,7 +318,6 @@ const unregister = () => {
         console.error(msg)
         onChangeState(ERROR, {msg: msg})
     }
-
 }
 
 //清理sdk初始化内容
@@ -449,7 +437,7 @@ const unmute = () => {
     currentSession.unmute();
 }
 
-// 转接
+//转接
 const transfer = (phone) => {
     if (!checkCurrentCallIsActive()) {
         return
@@ -457,6 +445,7 @@ const transfer = (phone) => {
     currentSession.refer(phone)
 }
 
+//发送按键
 const sendDtmf = (tone)=>{
     if (currentSession) {
         currentSession.sendDTMF(tone,{'duration': 160, 'interToneGap': 1200, 'extraHeaders': []})

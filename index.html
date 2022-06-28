@@ -4,113 +4,132 @@
     <title>话务条</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
     <script src="/ctibar.js"></script>
-    <link rel="stylesheet" href="./static/css/my.css">
-    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.js"></script>
-    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vConsole/3.12.1/vconsole.min.js" type="application/javascript"></script>
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.min.js"></script>
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vConsole/3.12.1/vconsole.min.js"
+            type="application/javascript"></script>
     <link rel="stylesheet"
           href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/theme-chalk/index.min.css">
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/index.min.js"></script>
-
+    <script src="https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_14274_24.f20fe80492657f7818c76ceda219ec70.js"></script>
 </head>
-
 <body>
 <div id="app">
     <div style="display:none;">
         <video id="audioView" autoplay></video>
     </div>
 
-
     <el-card class="my-softphone" :body-style="{padding: '0px'}">
-        <el-row>
-            <el-col :span="12">
-                <div class="status">
-<!--                    <el-tag :type="item.type" effect="dark">{{ item.label }}</el-tag>-->
-
+        <div>
+            <div class="status">
                     <div v-if="!status_is_call && !status_is_ring">
                         <div v-show="!status_is_login" style="padding:10px 0 0 0px;">
+                            <el-badge is-dot type="info" class="item"></el-badge>
                             分机未登录
                         </div>
                         <div v-show="status_is_login" style="padding:10px 0 0 0px;">
-                            分机：<span class="number">{{ ext_number }}</span> 在线
+                            <el-badge is-dot type="success" class="item"></el-badge>
+                            在线:<span class="number">{{ ext_number }}</span>
                         </div>
                     </div>
-                    <div v-else>
-                        <div v-show="status_is_call || status_is_ring">
-                            <div class="text">号码：<span class="number">{{ discaller }}</span>-><span
-                                    class="number">{{ discallee }}</span></div>
-                            <div class="text">时长：<span class="number">{{ calltime }}</span></div>
-                        </div>
+                    <div v-show="status_is_call || status_is_ring">
+                        <div class="text">号码：<span class="number">{{ discallee }}</span></div>
+                        <div class="text">时长：<span class="number">{{ calltime }}</span></div>
                     </div>
                 </div>
-            </el-col>
 
-            <el-col :span="12">
-                <div class="soft-function" :class="{disabled:!(status_is_ring && 'inbound' === call_type)}" @click="answer">
-                    <i class="el-icon-phone-outline"></i>
-                    <div class="text">接听</div>
-                </div>
+            <div class="btn">
 
-                <div class="soft-function" :class="{disabled:!(status_is_ring || status_is_call)}" @click="hungup">
-                    <i class="el-icon-circle-close"></i>
-                    <div class="text">挂断</div>
-                </div>
-
-                <div v-if="status_is_call" class="soft-function" :class="{disabled:!status_is_call}">
-                    <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
-                        <i class="el-icon-circle-close"></i>
-                        <div class="text">保持</div>
+                <div v-if="!status_is_call">
+                    <div v-if="!status_is_login" class="soft-function" @click="login">
+                        <iconpark-icon name="checkIn-qianru"></iconpark-icon>
+                        <div class="text">登录</div>
                     </div>
-                    <div v-else class="soft-function" :class="{unhold:status_is_hold}" @click="unhold">
-                        <i class="el-icon-circle-close"></i>
-                        <div class="text">取回</div>
+                    <div v-else class="soft-function" @click="logout">
+                        <iconpark-icon name="checkOut-qianchu"></iconpark-icon>
+                        <div class="text">登出</div>
                     </div>
                 </div>
 
                 <div v-if="status_is_call" class="soft-function disabled">
-                    <i class="el-icon-circle-close"></i>
+                    <iconpark-icon name="transfer-zhuanjie"></iconpark-icon>
                     <div class="text">转接</div>
                 </div>
 
-                <div v-if="!status_is_call" class="soft-function">
-                    <div v-if="!status_is_login" class="soft-function" @click="login">
-                        <i class="el-icon-s-promotion"></i>
-                        <div class="text">登录</div>
+                <div v-if="status_is_call" :class="{disabled:!status_is_call}">
+                    <div v-if="!status_is_hold" class="soft-function" :class="{hold:!status_is_hold}" @click="hold">
+                        <iconpark-icon name="keepHold-baochi"></iconpark-icon>
+                        <div class="text">保持</div>
                     </div>
-                    <div v-else class="soft-function" @click="logout">
-                        <i class="el-icon-circle-close"></i>
-                        <div class="text">登出</div>
+                    <div v-else class="soft-function" :class="{unhold:status_is_hold}" @click="unhold">
+                        <iconpark-icon name="takeBack-jiehui"></iconpark-icon>
+                        <div class="text">取回</div>
                     </div>
                 </div>
-            </el-col>
 
-        </el-row>
+                <div class="soft-function" :class="{disabled:!(status_is_ring || status_is_call)}" @click="hungup">
+                    <iconpark-icon name="phone-off"></iconpark-icon>
+                    <div class="text">挂断</div>
+                </div>
+
+                <div class="soft-function" :class="{disabled:!(status_is_ring && 'inbound' === call_type)}"
+                     @click="answer">
+                    <iconpark-icon name="phone-call"></iconpark-icon>
+                    <div class="text">接听</div>
+                </div>
+            </div>
+        </div>
     </el-card>
 
     <el-card v-show="status_is_login" class="config">
         <div>
-            <el-input style="max-width: 80%" v-model="phone_number" placeholder="请输入外呼号码" ></el-input>
-            <el-button :disabled="!status_is_login || status_is_ring || status_is_call" type="primary" icon="el-icon-phone" @click="makeCall"></el-button>
+            <el-input style="max-width: 80%" v-model="phone_number" placeholder="请输入外呼号码"></el-input>
+            <el-button :disabled="!status_is_login || status_is_ring || status_is_call" type="primary"
+                       icon="el-icon-phone" @click="makeCall"></el-button>
         </div>
         <div>
             <el-row>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(1)">1</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(2)">2</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(3)">3</el-button></el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(1)">1</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(2)">2</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(3)">3</el-button>
+                </el-col>
             </el-row>
             <el-row>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(4)">4</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(5)">5</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(6)">6</el-button></el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(4)">4</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(5)">5</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(6)">6</el-button>
+                </el-col>
             </el-row>
             <el-row>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(7)">7</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(8)">8</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(9)">9</el-button></el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(7)">7</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(8)">8</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(9)">9</el-button>
+                </el-col>
             </el-row>
             <el-row>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber('*')">*</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber(0)">0</el-button></el-col>
-                <el-col :span="8"><el-button class="number-card-button" @click="pressNumber('#')">#</el-button></el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber('*')">*</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber(0)">0</el-button>
+                </el-col>
+                <el-col :span="8">
+                    <el-button class="number-card-button" @click="pressNumber('#')">#</el-button>
+                </el-col>
             </el-row>
         </div>
     </el-card>
@@ -137,12 +156,6 @@
                     <el-form-item label="分机密码">
                         <el-input type="password" v-model="configuration.extPwd" clearable show-password/>
                     </el-form-item>
-                    <el-form-item label="外呼号码">
-                        <el-input type="text" v-model="phone_number" clearable/>
-                    </el-form-item>
-
-
-
                     <el-form-item label="打洞">
                         <el-radio-group v-model="configuration.stun.type">
                             <el-radio label="stun">stun</el-radio>
@@ -158,7 +171,6 @@
                     <el-form-item v-if="configuration.stun.type==='turn'" label="password">
                         <el-input type="password" v-model="configuration.stun.password" clearable/>
                     </el-form-item>
-
                 </el-form>
             </div>
 
@@ -174,13 +186,17 @@
                                     <el-descriptions-item label="domain">{{ props.row.domain }}</el-descriptions-item>
                                     <el-descriptions-item label="分机号">{{ props.row.extNo }}</el-descriptions-item>
                                     <el-descriptions-item label="密码">{{ props.row.extPwd }}</el-descriptions-item>
-                                    <el-descriptions-item label="分享">{{ shareAccount(props.row) }}</el-descriptions-item>
+                                    <el-descriptions-item label="分享">{{
+                                            shareAccount(props.row)
+                                        }}
+                                    </el-descriptions-item>
                                 </el-descriptions>
                             </template>
                         </el-table-column>
                         <el-table-column label="SERVER">
                             <template slot-scope="scope">
-                                <span style="font-size: 14px">{{ scope.row.extNo }}@{{ scope.row.host
+                                <span style="font-size: 14px">{{ scope.row.extNo }}@{{
+                                        scope.row.host
                                     }}:{{ scope.row.port }}</span>
                             </template>
                         </el-table-column>
@@ -205,7 +221,7 @@
         <el-tab-pane label="调试信息" name="test">
             <el-divider content-position="left">设备列表</el-divider>
             <li v-for="(device,index) in mediaDevices">
-                {{device.kindText}}-{{device.label}}
+                {{ device.kindText }}-{{ device.label }}
             </li>
 
             <el-divider content-position="left">麦克风测试</el-divider>
@@ -231,29 +247,19 @@
 
         </el-tab-pane>
 
-        <el-tab-pane label="使用说明" name="instructions">
-            <div style="font-size: 10px">
-                <h3>开源JS软电话</h3>
-                <p>
-                    历史账号使用localStorage本地存储，放心使用
-                </p>
-                <p>
-                    GITHUB:<a target="_blank" href="https://github.com/xsdhy/softphone">https://github.com/xsdhy/softphone</a>
-                </p>
-            </div>
-        </el-tab-pane>
     </el-tabs>
+
+    <div id="footer">Power By <a target="_blank" href="https://github.com/xsdhy/softphone">xsdhy</a></div>
 </div>
 </body>
-
 <script>
     //移动设备打开调试
     const device = navigator.userAgent
-    if ( device.indexOf('Android') > -1 || device.indexOf('iPhone') > -1 || device.indexOf('iPad') > -1 || device.indexOf('ios') > -1) {
+    if (device.indexOf('Android') > -1 || device.indexOf('iPhone') > -1 || device.indexOf('iPad') > -1 || device.indexOf('ios') > -1) {
         var vConsole = new VConsole();
     }
 
-    var app = new Vue({
+    new Vue({
         el: '#app',
         data() {
             return {
@@ -265,13 +271,12 @@
                     proto: true,
                     extNo: '',
                     extPwd: '',
-                    stun:{
-                        type:"stun",
-                        host:"stun.xsdhy.com:3478",
+                    stun: {
+                        type: "stun",
+                        host: "stun.xsdhy.com:3478",
                         username: '',
                         password: '',
                     },
-
                     autoRegister: false,
                     debug: false,
                     stateEventListener: this.stateEventListener
@@ -294,7 +299,7 @@
                 calltimeinter: null,//计时器-定时器,
 
                 history_accounts: [],//历史账号列表
-                lastAccount:"",//最后一次使用的账号配置
+                lastAccount: "",//最后一次使用的账号配置
 
                 networkSpeed: 0,//网速
                 testMicrophoneOb: null,
@@ -307,7 +312,7 @@
             let account = this.getQueryVariable("account")
 
             this.init_history_accounts();
-            this.phone_number=localStorage.getItem("phone_number")
+            this.phone_number = localStorage.getItem("phone_number")
 
             Ctibar.getMediaDeviceInfo().then((res) => {
                 this.mediaDevices = res;
@@ -340,8 +345,8 @@
                     alert("请输入要拨打的号码");
                     return
                 }
-                localStorage.setItem("phone_number",this.phone_number)
-                this.discallee=this.phone_number
+                localStorage.setItem("phone_number", this.phone_number)
+                this.discallee = this.phone_number
                 Ctibar.makecall(this.phone_number.trim());
             },
             hungup() {
@@ -349,12 +354,12 @@
                 Ctibar.hangup()
             },
             //按键
-            pressNumber(tone){
+            pressNumber(tone) {
                 //在通话中就发送
-                if (this.status_is_call){
+                if (this.status_is_call) {
                     Ctibar.sendDtmf(tone);
-                }else {
-                    this.phone_number=this.phone_number+tone
+                } else {
+                    this.phone_number = this.phone_number + tone
                 }
             },
             //事件回调
@@ -503,19 +508,19 @@
                 if (null != history_accounts) {
                     this.history_accounts = JSON.parse(history_accounts)
                 }
-                if (this.history_accounts.length<=0){
+                if (this.history_accounts.length <= 0) {
                     return;
                 }
 
                 //查看最后一次使用的账号是什么，若有则使用
-                let lastAccount=localStorage.getItem("lastAccount")
-                if (lastAccount===""){
+                let lastAccount = localStorage.getItem("lastAccount")
+                if (lastAccount === "") {
                     this.use_history_accounts(this.history_accounts[0])
                     return
                 }
                 for (let index = 0; index < this.history_accounts.length; index++) {
-                    let id = this.history_accounts[index].extNo+"@"+this.history_accounts[index].host+":"+this.history_accounts[index].port;
-                    if (lastAccount===id) {
+                    let id = this.history_accounts[index].extNo + "@" + this.history_accounts[index].host + ":" + this.history_accounts[index].port;
+                    if (lastAccount === id) {
                         this.use_history_accounts(this.history_accounts[index])
                         break
                     }
@@ -530,12 +535,12 @@
                 this.configuration.domain = item.domain;
                 this.configuration.extNo = item.extNo;
                 this.configuration.extPwd = item.extPwd;
-                if (item.stun){
+                if (item.stun) {
                     this.configuration.stun = item.stun;
                 }
             },
             //分享历史账号
-            shareAccount(item){
+            shareAccount(item) {
                 return window.btoa(JSON.stringify(item))
             },
             //删除历史账号
@@ -571,7 +576,7 @@
                         stun: this.configuration.stun,
                     })
                 }
-                localStorage.setItem("lastAccount", this.configuration.extNo+"@"+this.configuration.host+":"+this.configuration.port)
+                localStorage.setItem("lastAccount", this.configuration.extNo + "@" + this.configuration.host + ":" + this.configuration.port)
                 localStorage.setItem("history_accounts", JSON.stringify(this.history_accounts))
             },
             //麦克风音量检测-开始
@@ -616,10 +621,12 @@
             //获取get参数
             getQueryVariable(variable) {
                 let query = window.location.search.substring(1);
-                 let vars = query.split("&");
-                for (let i=0;i<vars.length;i++) {
+                let vars = query.split("&");
+                for (let i = 0; i < vars.length; i++) {
                     let pair = vars[i].split("=");
-                    if(pair[0] === variable){return pair[1];}
+                    if (pair[0] === variable) {
+                        return pair[1];
+                    }
                 }
                 return false;
             }
@@ -627,21 +634,99 @@
     });
 </script>
 </html>
-
-
 <style>
-    .number-card-button{
+    /*ui框架-表单行间距缩小*/
+    .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item {
+        margin-bottom: 5px;
+    }
+
+    .el-form-item {
+        margin-bottom: 5px;
+    }
+
+    /*自定义*/
+    .my-softphone {
+        top: 0;
+        left: 0;
+        height: 3.6rem;
+        max-width: 475px;
+        /*background-color: rgba(0, 0, 0, .15);*/
+        border-radius: 50px;
+        padding: 0 5px 0 20px;
+    }
+
+    .my-softphone .status {
+        height: 2.9rem;
+        margin-top: 0.3rem;
+        min-width: 30%;
+        border-radius: 3px;
+        float: left;
+    }
+
+    .my-softphone .btn {
+        height: 2.9rem;
+        min-width: 50%;
+        text-align: right;
+        float: right;
+    }
+
+    .my-softphone .number {
+        max-width: 150px;
+        overflow: hidden;
+    }
+
+    .my-softphone .status .text {
+        line-height: 22px;
+    }
+
+    .my-softphone .soft-function {
+        width: 2rem;
+        height: 2.9rem;
+        margin-top: 0.3rem;
+        margin-right: 1.2rem;
+
+        text-align: center;
+        border-radius: 3px;
+        float: right;
+        cursor: pointer;
+    }
+
+    .my-softphone .soft-function:hover {
+        background-color: rgba(0, 0, 0, .10);
+    }
+
+    .my-softphone .soft-function.disabled {
+        cursor: not-allowed;
+        color: #acacac !important;
+    }
+
+    .my-softphone .soft-function iconpark-icon {
+        font-size: 1.6rem;
+    }
+
+    .my-softphone .soft-function .text {
+        font-size: 1rem;
+    }
+
+    .my-softphone .soft-function .soft-function {
+        margin: 0 !important;
+    }
+
+    .number-card-button {
         width: 100%;
     }
+
     .config {
         margin-top: 0.5rem;
         max-width: 500px;
     }
-    /*表单行间距缩小*/
-    .el-form-item--mini.el-form-item, .el-form-item--small.el-form-item {
-        margin-bottom: 5px;
+
+    #footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 0.5rem;
     }
-    .el-form-item {
-        margin-bottom: 5px;
-    }
+
 </style>
