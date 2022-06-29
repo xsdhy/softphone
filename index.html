@@ -186,7 +186,7 @@
                                     <el-descriptions-item label="domain">{{ props.row.domain }}</el-descriptions-item>
                                     <el-descriptions-item label="分机号">{{ props.row.extNo }}</el-descriptions-item>
                                     <el-descriptions-item label="密码">{{ props.row.extPwd }}</el-descriptions-item>
-                                    <el-descriptions-item label="分享">{{shareAccount(props.row) }}
+                                    <el-descriptions-item label="分享">{{ shareAccount(props.row) }}
                                     </el-descriptions-item>
                                 </el-descriptions>
                             </template>
@@ -369,8 +369,12 @@
                 //在通话中就发送
                 if (this.statusIsCall) {
                     Ctibar.sendDtmf(tone);
+                    return
+                }
+                if (this.callPhoneNumber) {
+                    this.callPhoneNumber = this.callPhoneNumber + tone
                 } else {
-                    this.callPhoneNumber = this.callPhoneNumber + "" + tone
+                    this.callPhoneNumber = tone
                 }
             },
             //事件回调
