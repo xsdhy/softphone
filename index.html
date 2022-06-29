@@ -21,21 +21,21 @@
     <el-card class="my-softphone" :body-style="{padding: '0px'}">
         <div>
             <div class="status">
-                    <div v-if="!statusIsCall && !statusIsring">
-                        <div v-show="!statusIsLogin" style="padding:10px 0 0 0px;">
-                            <el-badge is-dot type="info" class="item"></el-badge>
-                            分机未登录
-                        </div>
-                        <div v-show="statusIsLogin" style="padding:10px 0 0 0px;">
-                            <el-badge is-dot type="success" class="item"></el-badge>
-                            在线:<span class="number">{{ agentNo }}</span>
-                        </div>
+                <div v-if="!statusIsCall && !statusIsring">
+                    <div v-show="!statusIsLogin" style="padding:10px 0 0 0px;">
+                        <el-badge is-dot type="info" class="item"></el-badge>
+                        分机未登录
                     </div>
-                    <div v-show="statusIsCall || statusIsring">
-                        <div class="text">号码：<span class="number">{{ discallee }}</span></div>
-                        <div class="text">时长：<span class="number">{{ callTime }}</span></div>
+                    <div v-show="statusIsLogin" style="padding:10px 0 0 0px;">
+                        <el-badge is-dot type="success" class="item"></el-badge>
+                        在线:<span class="number">{{ agentNo }}</span>
                     </div>
                 </div>
+                <div v-show="statusIsCall || statusIsring">
+                    <div class="text">号码：<span class="number">{{ discallee }}</span></div>
+                    <div class="text">时长：<span class="number">{{ callTime }}</span></div>
+                </div>
+            </div>
 
             <div class="btn">
 
@@ -86,7 +86,7 @@
             <el-button :disabled="!statusIsLogin || statusIsring || statusIsCall" type="primary"
                        icon="el-icon-phone" @click="makeCall"></el-button>
         </div>
-        <div>
+        <div style="margin-top: 5px">
             <el-row>
                 <el-col :span="8">
                     <el-button class="number-card-button" @click="pressNumber(1)">1</el-button>
@@ -186,9 +186,7 @@
                                     <el-descriptions-item label="domain">{{ props.row.domain }}</el-descriptions-item>
                                     <el-descriptions-item label="分机号">{{ props.row.extNo }}</el-descriptions-item>
                                     <el-descriptions-item label="密码">{{ props.row.extPwd }}</el-descriptions-item>
-                                    <el-descriptions-item label="分享">{{
-                                            shareAccount(props.row)
-                                        }}
+                                    <el-descriptions-item label="分享">{{shareAccount(props.row) }}
                                     </el-descriptions-item>
                                 </el-descriptions>
                             </template>
@@ -305,11 +303,13 @@
                 testMicrophoneOb: null,
                 testMicrophoneVolume: 0,
                 mediaDevices: null,
+
+                loading: null,
             }
         },
         created() {
             console.log("v1.1.0");
-            let account = this.getQueryVariable("account")
+            let account = this.getQueryVariable("u")
 
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
@@ -321,6 +321,14 @@
         methods: {
             login() {
                 console.log("点击登陆按钮");
+                if (this.configuration.host.length <= 3 || this.configuration.extNo.length <= 3 || this.configuration.extPwd.length <= 3) {
+                    this.$message({
+                        message: '请先在参数配置中输入账号信息',
+                        type: 'warning'
+                    });
+                    return;
+                }
+                this.loading = this.$loading({text: '登录中...'});
                 Ctibar.initSDK(this.configuration);
             },
             logout() {
@@ -342,7 +350,10 @@
             makeCall() {
                 console.log("点击拨打按钮")
                 if (this.callPhoneNumber.length <= 2) {
-                    alert("请输入要拨打的号码");
+                    this.$message({
+                        message: '请输入要拨打的号码',
+                        type: 'warning'
+                    });
                     return
                 }
                 localStorage.setItem("callPhoneNumber", this.callPhoneNumber)
@@ -359,7 +370,7 @@
                 if (this.statusIsCall) {
                     Ctibar.sendDtmf(tone);
                 } else {
-                    this.callPhoneNumber = this.callPhoneNumber + tone
+                    this.callPhoneNumber = this.callPhoneNumber + "" + tone
                 }
             },
             //事件回调
@@ -413,16 +424,19 @@
                         break;
                     case "CONNECTED":
                         //已连接
+                        this.loading.close();
                         this.saveHistoryAccounts()
                         this.agentNo = data.localAgent;
                         Ctibar.register()
                         break;
                     case "DISCONNECT":
+                        console.log("DISCONNECT", data.msg)
                         break;
                     case "RECONNECT":
                         break;
                     case "REGISTER_FAILED":
-                        //alert(data.msg);
+                        this.loading.close();
+                        this.$message.error(data.msg);
                         break;
                     default:
                         console.log("未处理事件")
@@ -501,7 +515,6 @@
                     document.body.removeChild(ringAudio);
                 }
             },
-
             //初始化历史账号，每次页面重新打开的时候执行
             initHistoryAccounts() {
                 let historyAccounts = localStorage.getItem("historyAccounts")
@@ -515,19 +528,19 @@
                 //查看最后一次使用的账号是什么，若有则使用
                 let lastAccount = localStorage.getItem("lastAccount")
                 if (lastAccount === "") {
-                    this.use_historyAccounts(this.historyAccounts[0])
+                    this.useHistoryAccounts(this.historyAccounts[0])
                     return
                 }
                 for (let index = 0; index < this.historyAccounts.length; index++) {
                     let id = this.historyAccounts[index].extNo + "@" + this.historyAccounts[index].host + ":" + this.historyAccounts[index].port;
                     if (lastAccount === id) {
-                        this.use_historyAccounts(this.historyAccounts[index])
+                        this.useHistoryAccounts(this.historyAccounts[index])
                         break
                     }
                 }
             },
             //使用历史账号
-            use_historyAccounts(item) {
+            useHistoryAccounts(item) {
                 console.log("使用历史账号:", item)
                 this.configuration.host = item.host;
                 this.configuration.port = item.port;

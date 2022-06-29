@@ -21,7 +21,7 @@ yarn && yarn build
 | 销毁SDK | Ctibar.cleanSDK()             |            |
 | 注册    | Ctibar.register()             |            |
 | 取消注册  | Ctibar.unregister()           |            |
-| 呼叫请求  | Ctibar.Ctibar.makecall(phone) | 真实外呼需要传的参数 |
+| 呼叫请求  | Ctibar.makecall(phone) | 真实外呼需要传的参数 |
 | 挂断电话  | Ctibar.hangup()               |            |
 | 应答接听  | Ctibar.answer()               |            |
 | 保持    | Ctibar.hold()                 |            |
