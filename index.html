@@ -50,7 +50,7 @@
                     </div>
                 </div>
 
-                <div v-if="statusIsCall" class="soft-function disabled">
+                <div v-if="statusIsCall" class="soft-function" :class="{disabled:!statusIsCall}">
                     <iconpark-icon name="transfer-zhuanjie"></iconpark-icon>
                     <div class="text">转接</div>
                 </div>

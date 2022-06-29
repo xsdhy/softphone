@@ -342,7 +342,7 @@ const makecall = (phone) => {
             extraHeaders: ["X-JCallId: " + currentCallId],
             sessionTimersExpires: 120,
             pcConfig: {
-                // iceTransportPolicy: "relay",
+                iceTransportPolicy: turnServer.type==="turn"?"relay":"all",
                 iceServers: getTurnServer()
             }
         })
@@ -379,7 +379,7 @@ const answer = () => {
         currentSession.answer({
             mediaConstraints: constraints,
             pcConfig: {
-                // iceTransportPolicy: "relay",
+                iceTransportPolicy: turnServer.type==="turn"?"relay":"all",
                 iceServers: getTurnServer()
             }
         })
