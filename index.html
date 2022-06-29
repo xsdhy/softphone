@@ -82,55 +82,50 @@
 
     <el-card v-show="statusIsLogin" class="config">
         <div>
-            <el-input style="max-width: 80%" v-model="callPhoneNumber" placeholder="请输入外呼号码"></el-input>
-            <el-button :disabled="!statusIsLogin || statusIsring || statusIsCall" type="primary"
-                       icon="el-icon-phone" @click="makeCall"></el-button>
+            <el-input v-model="callPhoneNumber" placeholder="请输入外呼号码"></el-input>
         </div>
         <div style="margin-top: 5px">
-            <el-row>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(1)">1</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(2)">2</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(3)">3</el-button>
-                </el-col>
-            </el-row>
-            <el-row>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(4)">4</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(5)">5</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(6)">6</el-button>
-                </el-col>
-            </el-row>
-            <el-row>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(7)">7</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(8)">8</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(9)">9</el-button>
-                </el-col>
-            </el-row>
-            <el-row>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber('*')">*</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber(0)">0</el-button>
-                </el-col>
-                <el-col :span="8">
-                    <el-button class="number-card-button" @click="pressNumber('#')">#</el-button>
-                </el-col>
-            </el-row>
+            <div style="display: flex;width: 100%;">
+                <div style="width:75%;">
+                    <div style="display: flex;height: 50px;">
+                        <div class="number-card-button" @click="pressNumber('1')">1</div>
+                        <div class="number-card-button" @click="pressNumber('2')">2</div>
+                        <div class="number-card-button" @click="pressNumber('3')">3</div>
+                    </div>
+                    <div style="display: flex;height: 50px;">
+                        <div class="number-card-button" @click="pressNumber('4')">4</div>
+                        <div class="number-card-button" @click="pressNumber('5')">5</div>
+                        <div class="number-card-button" @click="pressNumber('6')">6</div>
+                    </div>
+                </div>
+                <div style="width:25%;height: 100px;margin-left: 5px">
+                    <el-button class="number-op"
+                               :disabled="!statusIsLogin || statusIsring || statusIsCall"
+                               type="primary"
+                               icon="el-icon-phone"
+                               @click="makeCall"></el-button>
+                </div>
+            </div>
+            <div  style="display: flex;width: 100%;">
+                <div style="width:75%;">
+                    <div style="display: flex;height: 50px;">
+                        <div class="number-card-button" @click="pressNumber('7')">7</div>
+                        <div class="number-card-button" @click="pressNumber('8')">8</div>
+                        <div class="number-card-button" @click="pressNumber('9')">9</div>
+                    </div>
+                    <div style="display: flex;height: 50px;">
+                        <div class="number-card-button" @click="pressNumber('*')">*</div>
+                        <div class="number-card-button" @click="pressNumber('0')">0</div>
+                        <div class="number-card-button" @click="pressNumber('#')">#</div>
+                    </div>
+                </div>
+                <div style="width:25%;height: 100px;margin-left: 5px">
+                    <el-button class="number-op"
+                               type="info"
+                               icon="el-icon-caret-left"
+                               @click="backspaceNumber()"></el-button>
+                </div>
+            </div>
         </div>
     </el-card>
 
@@ -308,7 +303,7 @@
             }
         },
         created() {
-            console.log("v1.1.0");
+            console.log("v2.0.0");
             let account = this.getQueryVariable("u")
 
             this.initHistoryAccounts();
@@ -375,6 +370,12 @@
                     this.callPhoneNumber = this.callPhoneNumber + "" + tone
                 } else {
                     this.callPhoneNumber = "" + tone
+                }
+            },
+            //退格
+            backspaceNumber(){
+                if (this.callPhoneNumber && this.callPhoneNumber.length>0) {
+                    this.callPhoneNumber = this.callPhoneNumber.substring(0,this.callPhoneNumber.length-1)
                 }
             },
             //事件回调
@@ -729,8 +730,16 @@
         margin: 0 !important;
     }
 
+
     .number-card-button {
+        border: 1px solid #ccc;
         width: 100%;
+        text-align: center;
+    }
+
+    .number-op {
+        width: 100%;
+        height: 96%;
     }
 
     .config {
