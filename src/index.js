@@ -191,21 +191,26 @@ const initSDK = (config) => {
     //注册成功
     ua.on('registered', (e) => {
         //sip注册心跳机制
-        if (!reRegisterTimeInter){
-            setInterval(reRegister, 50*1000)
+        if (reRegisterTimeInter) {
+            clearInterval(reRegisterTimeInter);
         }
+        setInterval(reRegister, 50*1000)
         onChangeState(REGISTERED)
     })
     //取消注册
     ua.on('unregistered', (e) => {
         console.log("unregistered:",e)
-        reRegisterTimeInter=null
+        if (reRegisterTimeInter) {
+            clearInterval(reRegisterTimeInter);
+        }
         onChangeState(UNREGISTERED)
     })
     //注册失败
     ua.on('registrationFailed', (e) => {
         console.error("registrationFailed",e)
-        reRegisterTimeInter=null
+        if (reRegisterTimeInter) {
+            clearInterval(reRegisterTimeInter);
+        }
         let msg = '注册失败,请检查账号密码是否正确。' + e.cause
         onChangeState(REGISTER_FAILED, {msg: msg})
     })
@@ -311,7 +316,9 @@ const register = () => {
 //取消注册
 const unregister = () => {
     if (ua && ua.isConnected && ua.isRegistered()) {
-        reRegisterTimeInter=null
+        if (reRegisterTimeInter) {
+            clearInterval(reRegisterTimeInter);
+        }
         ua.unregister({all: true});
     } else {
         let msg = '尚未注册，操作禁止.'
