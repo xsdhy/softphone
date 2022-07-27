@@ -81,10 +81,9 @@ let currentCallId;
 let reRegisterTimeInter;
 
 
-
-let turnServer={
-    type:"stun",
-    host:"stun.xsdhy.com:3478",
+let turnServer = {
+    type: "stun",
+    host: "stun.xsdhy.com:3478",
     username: 'xsdhy',
     credential: 'password',
     credentialType: 'password'
@@ -130,11 +129,11 @@ const initSDK = (config) => {
     if (undefined !== config.domain && config.domain.length > 0) {
         domain = config.domain;
     }
-    if (config.stun && config.stun.type && config.stun.host){
-        turnServer.type=config.stun.type
-        turnServer.host=config.stun.host
-        turnServer.username=config.stun.username
-        turnServer.credential=config.stun.password
+    if (config.stun && config.stun.type && config.stun.host) {
+        turnServer.type = config.stun.type
+        turnServer.host = config.stun.host
+        turnServer.username = config.stun.username
+        turnServer.credential = config.stun.password
     }
 
     //注入状态回调函数
@@ -194,12 +193,12 @@ const initSDK = (config) => {
         if (reRegisterTimeInter) {
             clearInterval(reRegisterTimeInter);
         }
-        setInterval(reRegister, 50*1000)
+        setInterval(reRegister, 50 * 1000)
         onChangeState(REGISTERED)
     })
     //取消注册
     ua.on('unregistered', (e) => {
-        console.log("unregistered:",e)
+        console.log("unregistered:", e)
         if (reRegisterTimeInter) {
             clearInterval(reRegisterTimeInter);
         }
@@ -207,7 +206,7 @@ const initSDK = (config) => {
     })
     //注册失败
     ua.on('registrationFailed', (e) => {
-        console.error("registrationFailed",e)
+        console.error("registrationFailed", e)
         if (reRegisterTimeInter) {
             clearInterval(reRegisterTimeInter);
         }
@@ -217,7 +216,7 @@ const initSDK = (config) => {
     //Fired a few seconds before the registration expires. If the application does not set any listener for this event,
     // JsSIP will just re-register as usual.
     ua.on('registrationExpiring', (e) => {
-        console.error("registrationExpiring",e)
+        console.error("registrationExpiring", e)
         ua.register()
     })
 
@@ -241,7 +240,11 @@ const initSDK = (config) => {
         s.on('progress', (evt) => {
             //console.info('通话振铃-->通话振铃')
             //s.remote_identity.display_name
-            onChangeState(currentEvent, {direction: direction, otherLegNumber: data.request.from._uri.user, callId: currentCallId})
+            onChangeState(currentEvent, {
+                direction: direction,
+                otherLegNumber: data.request.from._uri.user,
+                callId: currentCallId
+            })
         });
 
         s.on('accepted', (evt) => {
@@ -338,7 +341,7 @@ const cleanSDK = () => {
 }
 
 //发起呼叫
-const makecall = (phone) => {
+const makecall = (phone,outNumber="") => {
     //注册情况下发起呼叫
     currentCallId = newUUID();
     if (ua && ua.isRegistered()) {
@@ -346,10 +349,10 @@ const makecall = (phone) => {
             eventHandlers: eventHandlers,
             mediaConstraints: constraints,
             mediaStream: localStream,
-            extraHeaders: ["X-JCallId: " + currentCallId],
+            extraHeaders: ["X-JCallId: " + currentCallId, "X-JOutNumber: " + outNumber],
             sessionTimersExpires: 120,
             pcConfig: {
-                iceTransportPolicy: turnServer.type==="turn"?"relay":"all",
+                iceTransportPolicy: turnServer.type === "turn" ? "relay" : "all",
                 iceServers: getTurnServer()
             }
         })
@@ -365,15 +368,15 @@ const makecall = (phone) => {
 }
 
 //获取turn
-const getTurnServer = ()=>{
-    if (turnServer.host === ""){
+const getTurnServer = () => {
+    if (turnServer.host === "") {
         return null
     }
-    if (turnServer.type==="stun"){
-        return [{urls: ['stun:'+turnServer.host]} ]
+    if (turnServer.type === "stun") {
+        return [{urls: ['stun:' + turnServer.host]}]
     }
     return [{
-        urls: ['turn:'+turnServer.host],
+        urls: ['turn:' + turnServer.host],
         username: turnServer.username,
         credential: turnServer.credential,
         credentialType: turnServer.credentialType
@@ -386,7 +389,7 @@ const answer = () => {
         currentSession.answer({
             mediaConstraints: constraints,
             pcConfig: {
-                iceTransportPolicy: turnServer.type==="turn"?"relay":"all",
+                iceTransportPolicy: turnServer.type === "turn" ? "relay" : "all",
                 iceServers: getTurnServer()
             }
         })
@@ -453,9 +456,9 @@ const transfer = (phone) => {
 }
 
 //发送按键
-const sendDtmf = (tone)=>{
+const sendDtmf = (tone) => {
     if (currentSession) {
-        currentSession.sendDTMF(tone,{'duration': 160, 'interToneGap': 1200, 'extraHeaders': []})
+        currentSession.sendDTMF(tone, {'duration': 160, 'interToneGap': 1200, 'extraHeaders': []})
     }
 }
 
