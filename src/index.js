@@ -359,12 +359,13 @@ const makecall = (phone,outNumber="") => {
         //设置当前通话的session
         currentSession = outgoingSession
         otherLegNumber = phone
+        return currentCallId;
     } else {
         let msg = '请在注册成功后再发起外呼请求.'
         console.error(msg)
         onChangeState(ERROR, {msg: msg})
+        return "";
     }
-
 }
 
 //获取turn

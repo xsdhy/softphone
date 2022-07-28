@@ -353,7 +353,7 @@
                 }
                 localStorage.setItem("callPhoneNumber", this.callPhoneNumber)
                 this.discallee = this.callPhoneNumber
-                Ctibar.makecall(this.callPhoneNumber.trim());
+                let callId = Ctibar.makecall(this.callPhoneNumber.trim());
             },
             hungup() {
                 console.log("点击挂断按钮");
