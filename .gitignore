@@ -3,5 +3,5 @@
 node_modules
 /dist
 .idea
-
+lib
 yarn.lock

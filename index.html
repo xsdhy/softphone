@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <title>话务条</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
-    <script src="/ctibar.js"></script>
+    <script src="lib/bundle.browser.js"></script>
     <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.min.js"></script>
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vConsole/3.12.1/vconsole.min.js"
             type="application/javascript"></script>
@@ -242,6 +242,8 @@
 
     </el-tabs>
 
+
+
     <div id="footer">Power By <a target="_blank" href="https://github.com/xsdhy/softphone">xsdhy</a></div>
 </div>
 </body>
@@ -309,13 +311,12 @@
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
 
-            Ctibar.getMediaDeviceInfo().then((res) => {
+            cti.getMediaDeviceInfo().then((res) => {
                 this.mediaDevices = res;
             });
         },
         methods: {
             login() {
-                console.log("点击登陆按钮");
                 if (this.configuration.host.length <= 3 || this.configuration.extNo.length <= 3 || this.configuration.extPwd.length <= 3) {
                     this.$message({
                         message: '请先在参数配置中输入账号信息',
@@ -324,23 +325,23 @@
                     return;
                 }
                 this.loading = this.$loading({text: '登录中...'});
-                Ctibar.initSDK(this.configuration);
+                cti.initSDK(this.configuration);
             },
             logout() {
                 console.log("点击退出按钮")
-                Ctibar.unregister()
+                cti.unregister()
             },
             answer() {
                 console.log("点击应答按钮")
-                Ctibar.answer()
+                cti.answer()
             },
             hold() {
                 console.log("点击保持按钮")
-                Ctibar.hold()
+                cti.hold()
             },
             unhold() {
                 console.log("点击取消保持按钮")
-                Ctibar.unhold()
+                cti.unhold()
             },
             makeCall() {
                 console.log("点击拨打按钮")
@@ -353,17 +354,17 @@
                 }
                 localStorage.setItem("callPhoneNumber", this.callPhoneNumber)
                 this.discallee = this.callPhoneNumber
-                let callId = Ctibar.makecall(this.callPhoneNumber.trim());
+                let callId = cti.call(this.callPhoneNumber.trim());
             },
             hungup() {
                 console.log("点击挂断按钮");
-                Ctibar.hangup()
+                cti.hangup()
             },
             //按键
             pressNumber(tone) {
                 //在通话中就发送
                 if (this.statusIsCall) {
-                    Ctibar.sendDtmf(tone);
+                    cti.sendDtmf(tone);
                     return
                 }
                 if (this.callPhoneNumber) {
@@ -432,7 +433,7 @@
                         this.loading.close();
                         this.saveHistoryAccounts()
                         this.agentNo = data.localAgent;
-                        Ctibar.register()
+                        cti.register()
                         break;
                     case "DISCONNECT":
                         console.log("DISCONNECT", data.msg)
@@ -599,7 +600,7 @@
             },
             //麦克风音量检测-开始
             testMicrophoneHandelStart() {
-                Ctibar.testMicrophone((volume) => {
+                cti.testMicrophone((volume) => {
                     this.testMicrophoneVolume = volume
                 }).then((res) => {
                     this.testMicrophoneOb = res;
@@ -616,7 +617,7 @@
             //网速检测
             testNetworkHandel() {
                 //window.location.host+'/static/images/test-network-speed.jpg'
-                Ctibar.testNetwork().then((networkSpeed) => {
+                cti.testNetwork().then((networkSpeed) => {
                     this.networkSpeed = networkSpeed;
                     console.log("测速:", this.getFileSize(networkSpeed))
                 });

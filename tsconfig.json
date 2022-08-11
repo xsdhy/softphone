@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "moduleResolution": "node",
+    "module": "es6",
+    "lib": ["es2017", "es7", "es6", "dom"],
+    "declaration": true,
+    "declarationDir": "./lib",
+    "outDir": "lib",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
+  },
+  "include": [
+    "src"
+  ]
+}
