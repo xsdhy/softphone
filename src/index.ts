@@ -70,8 +70,7 @@ const enum State {
 }
 
 
-export default class cti {
-
+export default class SipCall {
     //媒体控制
     private constraints = {
         audio: true,
@@ -464,7 +463,6 @@ export default class cti {
         })
     }
 
-
     //麦克风测试
     public static async testMicrophone(handle: (arg0: number) => void) {
         try {
@@ -507,7 +505,6 @@ export default class cti {
         }
     }
 
-
     //获取媒体设备
     public static async getMediaDeviceInfo() {
         let deviceInfos = await navigator.mediaDevices.enumerateDevices();
@@ -529,5 +526,3 @@ export default class cti {
         return devices;
     }
 }
-
-

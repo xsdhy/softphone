@@ -312,7 +312,7 @@
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
 
-            cti.getMediaDeviceInfo().then((res) => {
+            SipCall.getMediaDeviceInfo().then((res) => {
                 this.mediaDevices = res;
             });
         },
@@ -326,7 +326,7 @@
                     return;
                 }
                 this.loading = this.$loading({text: '登录中...'});
-                this.sipClient = new cti(this.configuration);
+                this.sipClient = new SipCall(this.configuration);
             },
             logout() {
                 console.log("点击退出按钮")
@@ -601,7 +601,7 @@
             },
             //麦克风音量检测-开始
             testMicrophoneHandelStart() {
-                cti.testMicrophone((volume) => {
+                SipCall.testMicrophone((volume) => {
                     this.testMicrophoneVolume = volume
                 }).then((res) => {
                     this.testMicrophoneOb = res;
