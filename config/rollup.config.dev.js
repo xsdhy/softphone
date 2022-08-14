@@ -13,8 +13,9 @@ import nodePolyfills from 'rollup-plugin-polyfill-node';
 export default {
     input: "./src/index.ts",
     external: [
-        "events",
+        // "events",
     ],
+
     output: [
         {
             file: pkg.main,
@@ -28,27 +29,28 @@ export default {
             file: pkg.browser,
             format: 'umd',
             name: 'cti',
+            // globals:{
+            //     "jssip":"jssip__namespace"
+            // }
         },
     ],
     plugins: [
-        json(),
+        babel({
+            exclude: "node_modules/**",
+            plugins: ['external-helpers']
+        }),
         nodeResolve({
             browser: true,
         }),
 
+        json(),
         nodePolyfills({
             include: ["events"]
         }),
 
         commonjs(),
-
-        // babel({
-        //     exclude: 'node_modules/**',
-        //     externalHelpers: true,
-        //     runtimeHelpers: true
-        // }),
-
         typescript(),
+
         // uglify(),
         // livereload(),
         serve({

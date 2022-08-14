@@ -8,7 +8,7 @@ import {
     PeerConnectionEvent,
     RTCSession
 } from "jssip/lib/RTCSession";
-import {IncomingRTCSessionEvent, OutgoingRTCSessionEvent} from "jssip/lib/UA";
+import {IncomingRTCSessionEvent, OutgoingRTCSessionEvent, UAConfiguration} from "jssip/lib/UA";
 
 
 //初始化配置
@@ -202,11 +202,11 @@ export default class cti {
         // JsSIP.C.SESSION_EXPIRES=120,JsSIP.C.MIN_SESSION_EXPIRES=120;
         let proto = config.proto ? 'wss' : 'ws'
         let wsServer = proto + '://' + config.host + ':' + config.port
-        let uri = 'sip:' + config.extNo + '@' + config.domain
         this.socket = new jssip.WebSocketInterface(wsServer)
+
         this.ua = new jssip.UA({
             sockets: [this.socket],
-            uri: uri,
+            uri: 'sip:' + config.extNo + '@' + config.domain,
             password: config.extPwd,
             register: false,
             register_expires: 300,
