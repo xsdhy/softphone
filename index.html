@@ -614,29 +614,6 @@
                     this.testMicrophoneOb = null;
                 }
             },
-            //网速检测
-            testNetworkHandel() {
-                //window.location.host+'/static/images/test-network-speed.jpg'
-                cti.testNetwork().then((networkSpeed) => {
-                    this.networkSpeed = networkSpeed;
-                    console.log("测速:", this.getFileSize(networkSpeed))
-                });
-            },
-            //文件大小可视化
-            getFileSize(size) {//把字节转换成正常文件大小
-                if (!size) return "";
-                size = size * 1024;
-                var num = 1024.00; //byte
-                if (size < num)
-                    return size + "B";
-                if (size < Math.pow(num, 2))
-                    return (size / num).toFixed(2) + "KB/S"; //kb
-                if (size < Math.pow(num, 3))
-                    return (size / Math.pow(num, 2)).toFixed(2) + "MB/S"; //M
-                if (size < Math.pow(num, 4))
-                    return (size / Math.pow(num, 3)).toFixed(2) + "G/S"; //G
-                return (size / Math.pow(num, 4)).toFixed(2) + "T/S"; //T
-            },
             //获取get参数
             getQueryVariable(variable) {
                 let query = window.location.search.substring(1);

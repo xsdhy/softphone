@@ -8,7 +8,8 @@ import {
     PeerConnectionEvent,
     RTCSession
 } from "jssip/lib/RTCSession";
-import {IncomingRTCSessionEvent, OutgoingRTCSessionEvent, UAConfiguration} from "jssip/lib/UA";
+import {IncomingRTCSessionEvent, OutgoingRTCSessionEvent} from "jssip/lib/UA";
+import {clearTimeout} from "timers";
 
 
 //初始化配置
@@ -46,7 +47,7 @@ interface RTCIceServer {
 }
 
 const enum State {
-    MIC_ERROR = "MICERROR",//麦克风检测异常
+    MIC_ERROR = "MIC_ERROR",//麦克风检测异常
     ERROR = "ERROR",//错误操作或非法操作
     CONNECTED = "CONNECTED", //websocket已连接
     DISCONNECTED = "DISCONNECTED", //websocket已断开连接
@@ -69,12 +70,8 @@ export default class cti {
         video: false
     }
 
-    //本地媒体流
-    //private static localStream;
-
     //创建audio控件并且自动播放
     private static audioView = document.createElement('audio')
-    //audioView.autoplay = true;
 
 
     //jssip.UA
@@ -113,7 +110,7 @@ export default class cti {
 
     private static eventHandlers = {
         //回铃音处理
-        peerconnection: (e: PeerConnectionEvent) => {
+        peerconnection: (e: { peerconnection: RTCPeerConnection; }) => {
             this.handleAudio(e.peerconnection)
         }
     };
@@ -121,13 +118,12 @@ export default class cti {
     //处理音频播放
     private static handleAudio(pc: RTCPeerConnection) {
         this.audioView.autoplay = true;
-        console.log("这里是，回铃音处理")
-        // pc.onaddstream = (media) => {
-        //     let remoteStream = media.stream;
-        //     if (remoteStream.active) {
-        //         this.audioView.srcObject = remoteStream;
-        //     }
-        // }
+        pc.onaddstream = (media: { stream: any; }) => {
+            let remoteStream = media.stream;
+            if (remoteStream.active) {
+                this.audioView.srcObject = remoteStream;
+            }
+        }
     }
 
     //清理全局变量
@@ -343,8 +339,10 @@ export default class cti {
 
     //重新注册
     private static reRegister() {
-        if (this.ua.isConnected()) {
+        if (this.ua && this.ua.isConnected()) {
             this.ua.register()
+        }else {
+            clearTimeout(this.reRegisterTimeInter)
         }
     }
 
@@ -502,6 +500,71 @@ export default class cti {
             console.error("麦克风检测异常！！请检查麦克风")
             this.onChangeState(State.MIC_ERROR, {msg: "麦克风检测异常！！请检查麦克风"})
         })
+    }
+
+
+    //麦克风测试
+    public static async testMicrophone(handle: (arg0: number) => void) {
+            try {
+                let stream =  await navigator.mediaDevices.getUserMedia({audio: true});
+                let context = new AudioContext(); //音频内容
+                let recorder = context.createScriptProcessor(4096, 1, 1);
+                recorder.addEventListener("audioprocess", e => {
+                    let buffer = e.inputBuffer.getChannelData(0);
+                    let maxVal = 0;
+                    for (let i = 0; i < buffer.length; i++) {
+                        if (maxVal < buffer[i]) {
+                            maxVal = buffer[i];
+                        }
+                    }
+                    // 模拟音量
+                    handle(Math.round(maxVal * 100));
+                });
+                let audioInput = context.createMediaStreamSource(stream);
+                audioInput.connect(recorder);
+                recorder.connect(context.destination);
+                const stop = () => {
+                    audioInput.disconnect();
+                    recorder.disconnect();
+                    stream.getTracks()[0].stop();
+                };
+                return {
+                    yes: () => {
+                        stop();
+                    }, no: () => {
+                        stop();
+                    }
+                };
+            } catch (e) {
+                return {
+                    yes: () => {
+                    },
+                    no: () => {
+                    },
+                };
+            }
+    }
+
+
+    //获取媒体设备
+    public static async getMediaDeviceInfo() {
+        let deviceInfos = await navigator.mediaDevices.enumerateDevices();
+        let devices:[]=[];
+        for (let {kind, label, deviceId, groupId} of deviceInfos) {
+            let kindText = "";
+            switch (kind) {
+                case "audioinput":
+                    kindText = "输入";
+                    break;
+                case "audiooutput":
+                    kindText = "输出";
+                    break;
+                default:
+                    kindText = "未知";
+            }
+            devices.push({kind, label, deviceId, groupId, kindText})
+        }
+        return devices;
     }
 }
 
