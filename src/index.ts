@@ -46,6 +46,14 @@ interface RTCIceServer {
     username?: string;
 }
 
+interface StateListenerMessage {
+    msg?: string;
+    localAgent?: String;
+    direction?: CallDirection;
+    otherLegNumber?: String;
+    callId?: String;
+}
+
 const enum State {
     MIC_ERROR = "MIC_ERROR",//麦克风检测异常
     ERROR = "ERROR",//错误操作或非法操作
@@ -65,100 +73,41 @@ const enum State {
 export default class cti {
 
     //媒体控制
-    private static constraints = {
+    private constraints = {
         audio: true,
         video: false
     }
 
-    //创建audio控件并且自动播放
-    private static audioView = document.createElement('audio')
+    //创建audio控件，播放声音的地方
+    private audioView = document.createElement('audio')
 
 
-    //jssip.UA
-    //jssip.WebSocket
-    private static ua: jssip.UA
-    private static socket: jssip.WebSocketInterface
-    //登录后是否自动注册
-    private static autoRegister = false;
-    //设置是否开启麦克风检测
-    private static checkMic = false;
+    private ua: jssip.UA
+    private socket: jssip.WebSocketInterface
+    private ice: RTCIceServer = {urls: ""}
 
-    //呼叫中session管理
-    private static outgoingSession: RTCSession | undefined;
-    private static incomingSession: RTCSession | undefined;
-    private static currentSession: RTCSession | undefined;
 
-    //呼叫方向 outbound:呼出/inbound:呼入
-    private static direction: CallDirection
     //当前坐席号码
-    private static localAgent: String
+    private localAgent: String
+    //呼叫中session:呼出、呼入、当前
+    private outgoingSession: RTCSession | undefined;
+    private incomingSession: RTCSession | undefined;
+    private currentSession: RTCSession | undefined;
+    //呼叫方向 outbound:呼出/inbound:呼入
+    private direction: CallDirection | undefined;
     //对方号码
-    private static otherLegNumber: String
+    private otherLegNumber: String | undefined;
     //当前通话uuid
-    private static currentCallId: String;
+    private currentCallId: String | undefined;
 
-    private static reRegisterTimeInter: NodeJS.Timeout | undefined;
-
-    //注册状态回调函数
-    private static stateEventListener: Function;
+    //回调函数
+    private stateEventListener: Function | undefined;
 
 
-    private static ice: RTCIceServer = {
-        urls: ""
-    }
-
-
-    private static eventHandlers = {
-        //回铃音处理
-        peerconnection: (e: { peerconnection: RTCPeerConnection; }) => {
-            this.handleAudio(e.peerconnection)
-        }
-    };
-
-    //处理音频播放
-    private static handleAudio(pc: RTCPeerConnection) {
-        this.audioView.autoplay = true;
-        pc.onaddstream = (media: { stream: any; }) => {
-            let remoteStream = media.stream;
-            if (remoteStream.active) {
-                this.audioView.srcObject = remoteStream;
-            }
-        }
-    }
-
-    //清理全局变量
-    private static cleanGlobalCallData() {
-        this.outgoingSession = undefined
-        this.incomingSession = undefined
-        this.currentSession = undefined
-        // this.direction = ""
-        this.otherLegNumber = ""
-        this.currentCallId = ""
-    }
-
-    private static onChangeState(event: String, data: { msg?: string; localAgent?: String; direction?: CallDirection; otherLegNumber?: any; callId?: String; } | null) {
-        this.stateEventListener(event, data)
-    }
-
-    //check当前通话是否存在
-    private static checkCurrentCallIsActive(): boolean {
-        if (!this.currentSession || !this.currentSession.isEstablished()) {
-            let msg = '当前通话不存在或已销毁，无法执行该操作。'
-            this.onChangeState(State.ERROR, {msg: msg})
-            return false
-        }
-        return true
-    }
-
-    //初始化SDK
-    public static initSDK(config: InitConfig) {
-        //初始化变量
-
-        //注入是否自动注册
-        this.autoRegister = config.autoRegister
+    //构造函数-初始化SDK
+    constructor(config: InitConfig) {
         //坐席号码
         this.localAgent = config.extNo
-
 
         if (undefined === config.domain || config.domain.length <= 0) {
             config.domain = config.host;
@@ -175,7 +124,6 @@ export default class cti {
             this.ice.urls = ['stun:stun.xsdhy.com:3478']
         }
 
-
         //注入状态回调函数
         if (config.stateEventListener !== null) {
             this.stateEventListener = config.stateEventListener
@@ -183,12 +131,10 @@ export default class cti {
 
         //麦克风检测开启
         if (config.checkMic) {
-            this.checkMic = config.checkMic
-            //执行麦克风检测报错
             this.micCheck()
         }
 
-
+        //开始jssip调试模式
         if (config.debug) {
             jssip.debug.enable('JsSIP:*');
         } else {
@@ -205,7 +151,7 @@ export default class cti {
             uri: 'sip:' + config.extNo + '@' + config.domain,
             password: config.extPwd,
             register: false,
-            register_expires: 300,
+            register_expires: 60,
             session_timers: false,
             // connection_recovery_max_interval:30,
             // connection_recovery_min_interval:4,
@@ -214,9 +160,9 @@ export default class cti {
 
         //websocket连接成功
         this.ua.on('connected', (e) => {
-            this.onChangeState(State.CONNECTED, {localAgent: this.localAgent})
+            this.onChangeState(State.CONNECTED, null)
             //自动注册
-            if (this.autoRegister) {
+            if (config.autoRegister) {
                 this.ua.register();
             }
         })
@@ -227,34 +173,23 @@ export default class cti {
         })
         //注册成功
         this.ua.on('registered', (e) => {
-            //sip注册心跳机制
-            if (this.reRegisterTimeInter) {
-                clearInterval(this.reRegisterTimeInter);
-            }
-            setInterval(this.reRegister, 50 * 1000)
-            this.onChangeState(State.REGISTERED, null)
+            this.onChangeState(State.REGISTERED, {localAgent: this.localAgent})
         })
         //取消注册
         this.ua.on('unregistered', (e) => {
             console.log("unregistered:", e)
-            if (this.reRegisterTimeInter) {
-                clearInterval(this.reRegisterTimeInter);
-            }
-            this.onChangeState(State.UNREGISTERED, null)
+            this.onChangeState(State.UNREGISTERED, {localAgent: this.localAgent})
         })
         //注册失败
         this.ua.on('registrationFailed', (e) => {
             console.error("registrationFailed", e)
-            if (this.reRegisterTimeInter) {
-                clearInterval(this.reRegisterTimeInter);
-            }
             let msg = '注册失败,请检查账号密码是否正确。' + e.cause
             this.onChangeState(State.REGISTER_FAILED, {msg: msg})
         })
         //Fired a few seconds before the registration expires. If the application does not set any listener for this event,
         // JsSIP will just re-register as usual.
         this.ua.on('registrationExpiring', (e) => {
-            console.error("registrationExpiring", e)
+            console.error("registrationExpiring")
             this.ua.register()
         })
 
@@ -293,13 +228,13 @@ export default class cti {
 
             s.on('ended', (evt: EndEvent) => {
                 //console.info('通话结束-->通话结束')
-                this.cleanGlobalCallData()
+                this.cleanCallingData()
                 this.onChangeState(State.CALL_END, null)
             });
 
             s.on('failed', (evt: EndEvent) => {
                 //console.info('通话失败-->通话失败')
-                this.cleanGlobalCallData()
+                this.cleanCallingData()
                 this.onChangeState(State.CALL_END, null)
             })
 
@@ -337,17 +272,46 @@ export default class cti {
         this.ua.start()
     }
 
-    //重新注册
-    private static reRegister() {
-        if (this.ua && this.ua.isConnected()) {
-            this.ua.register()
-        }else {
-            clearTimeout(this.reRegisterTimeInter)
+    //处理音频播放
+    private handleAudio(pc: RTCPeerConnection) {
+        this.audioView.autoplay = true;
+        pc.onaddstream = (media: { stream: any; }) => {
+            let remoteStream = media.stream;
+            if (remoteStream.active) {
+                this.audioView.srcObject = remoteStream;
+            }
         }
     }
 
+    //清理一通通话的相关数据
+    private cleanCallingData() {
+        this.outgoingSession = undefined
+        this.incomingSession = undefined
+        this.currentSession = undefined
+        this.direction = undefined
+        this.otherLegNumber = ""
+        this.currentCallId = ""
+    }
+
+    private onChangeState(event: String, data: StateListenerMessage | null) {
+        if (undefined === this.stateEventListener) {
+            return
+        }
+        this.stateEventListener(event, data)
+    }
+
+    //check当前通话是否存在
+    private checkCurrentCallIsActive(): boolean {
+        if (!this.currentSession || !this.currentSession.isEstablished()) {
+            let msg = '当前通话不存在或已销毁，无法执行该操作。'
+            this.onChangeState(State.ERROR, {msg: msg})
+            return false
+        }
+        return true
+    }
+
     //注册请求
-    public static register() {
+    public register() {
         if (this.ua.isConnected()) {
             this.ua.register()
         } else {
@@ -358,11 +322,8 @@ export default class cti {
     }
 
     //取消注册
-    public static unregister() {
+    public unregister() {
         if (this.ua && this.ua.isConnected() && this.ua.isRegistered()) {
-            if (this.reRegisterTimeInter) {
-                clearInterval(this.reRegisterTimeInter);
-            }
             this.ua.unregister({all: true});
         } else {
             let msg = '尚未注册，操作禁止.'
@@ -372,23 +333,24 @@ export default class cti {
     }
 
     //清理sdk初始化内容
-    private static cleanSDK() {
+    private cleanSDK() {
         //清理sdk
-        this.autoRegister = false
-        this.outgoingSession = undefined
-        this.incomingSession = undefined
-        this.currentSession = undefined
+        this.cleanCallingData();
         this.ua.stop()
     }
 
-
     //发起呼叫
-    public static call = (phone: string, outNumber: String = ""): String => {
+    public call = (phone: string, outNumber: String = ""): String => {
         //注册情况下发起呼叫
         this.currentCallId = uuidv4();
         if (this.ua && this.ua.isRegistered()) {
             this.outgoingSession = this.ua.call(phone, {
-                eventHandlers: this.eventHandlers,
+                eventHandlers: {
+                    //回铃音处理
+                    peerconnection: (e: { peerconnection: RTCPeerConnection; }) => {
+                        this.handleAudio(e.peerconnection)
+                    }
+                },
                 mediaConstraints: this.constraints,
                 //mediaStream: this.localStream,
                 extraHeaders: ["X-JCallId: " + this.currentCallId, "X-JOutNumber: " + outNumber],
@@ -411,7 +373,7 @@ export default class cti {
     }
 
     //应答
-    public static answer() {
+    public answer() {
         if (this.currentSession && this.currentSession.isInProgress()) {
             this.currentSession.answer({
                 mediaConstraints: this.constraints,
@@ -427,7 +389,7 @@ export default class cti {
     }
 
     //挂断电话
-    public static hangup() {
+    public hangup() {
         if (this.currentSession && !this.currentSession.isEnded()) {
             this.currentSession.terminate();
         } else {
@@ -438,7 +400,7 @@ export default class cti {
     }
 
     //保持通话
-    public static hold() {
+    public hold() {
         if (!this.currentSession || !this.checkCurrentCallIsActive()) {
             return
         }
@@ -446,7 +408,7 @@ export default class cti {
     }
 
     //取消保持
-    public static unhold() {
+    public unhold() {
         if (!this.currentSession || !this.checkCurrentCallIsActive()) {
             return
         }
@@ -457,7 +419,7 @@ export default class cti {
     }
 
     //静音
-    public static mute() {
+    public mute() {
         if (!this.currentSession || !this.checkCurrentCallIsActive()) {
             return
         }
@@ -465,7 +427,7 @@ export default class cti {
     }
 
     //取消静音
-    public static unmute() {
+    public unmute() {
         if (!this.currentSession || !this.checkCurrentCallIsActive()) {
             return
         }
@@ -473,7 +435,7 @@ export default class cti {
     }
 
     //转接
-    public static transfer(phone: string) {
+    public transfer(phone: string) {
         if (!this.currentSession || !this.checkCurrentCallIsActive()) {
             return
         }
@@ -481,14 +443,14 @@ export default class cti {
     }
 
     //发送按键
-    public static sendDtmf(tone: string) {
+    public sendDtmf(tone: string) {
         if (this.currentSession) {
             this.currentSession.sendDTMF(tone, {'duration': 160, 'interToneGap': 1200, 'extraHeaders': []})
         }
     }
 
     //麦克风检测
-    public static micCheck() {
+    public micCheck() {
         navigator.mediaDevices.getUserMedia({
             video: false,
             audio: true
@@ -505,51 +467,51 @@ export default class cti {
 
     //麦克风测试
     public static async testMicrophone(handle: (arg0: number) => void) {
-            try {
-                let stream =  await navigator.mediaDevices.getUserMedia({audio: true});
-                let context = new AudioContext(); //音频内容
-                let recorder = context.createScriptProcessor(4096, 1, 1);
-                recorder.addEventListener("audioprocess", e => {
-                    let buffer = e.inputBuffer.getChannelData(0);
-                    let maxVal = 0;
-                    for (let i = 0; i < buffer.length; i++) {
-                        if (maxVal < buffer[i]) {
-                            maxVal = buffer[i];
-                        }
+        try {
+            let stream = await navigator.mediaDevices.getUserMedia({audio: true});
+            let context = new AudioContext(); //音频内容
+            let recorder = context.createScriptProcessor(4096, 1, 1);
+            recorder.addEventListener("audioprocess", e => {
+                let buffer = e.inputBuffer.getChannelData(0);
+                let maxVal = 0;
+                for (let i = 0; i < buffer.length; i++) {
+                    if (maxVal < buffer[i]) {
+                        maxVal = buffer[i];
                     }
-                    // 模拟音量
-                    handle(Math.round(maxVal * 100));
-                });
-                let audioInput = context.createMediaStreamSource(stream);
-                audioInput.connect(recorder);
-                recorder.connect(context.destination);
-                const stop = () => {
-                    audioInput.disconnect();
-                    recorder.disconnect();
-                    stream.getTracks()[0].stop();
-                };
-                return {
-                    yes: () => {
-                        stop();
-                    }, no: () => {
-                        stop();
-                    }
-                };
-            } catch (e) {
-                return {
-                    yes: () => {
-                    },
-                    no: () => {
-                    },
-                };
-            }
+                }
+                // 模拟音量
+                handle(Math.round(maxVal * 100));
+            });
+            let audioInput = context.createMediaStreamSource(stream);
+            audioInput.connect(recorder);
+            recorder.connect(context.destination);
+            const stop = () => {
+                audioInput.disconnect();
+                recorder.disconnect();
+                stream.getTracks()[0].stop();
+            };
+            return {
+                yes: () => {
+                    stop();
+                }, no: () => {
+                    stop();
+                }
+            };
+        } catch (e) {
+            return {
+                yes: () => {
+                },
+                no: () => {
+                },
+            };
+        }
     }
 
 
     //获取媒体设备
     public static async getMediaDeviceInfo() {
         let deviceInfos = await navigator.mediaDevices.enumerateDevices();
-        let devices:[]=[];
+        let devices: [] = [];
         for (let {kind, label, deviceId, groupId} of deviceInfos) {
             let kindText = "";
             switch (kind) {

@@ -302,6 +302,7 @@
                 mediaDevices: null,
 
                 loading: null,
+                sipClient:undefined,
             }
         },
         created() {
@@ -325,23 +326,23 @@
                     return;
                 }
                 this.loading = this.$loading({text: '登录中...'});
-                cti.initSDK(this.configuration);
+                this.sipClient = new cti(this.configuration);
             },
             logout() {
                 console.log("点击退出按钮")
-                cti.unregister()
+                this.sipClient.unregister()
             },
             answer() {
                 console.log("点击应答按钮")
-                cti.answer()
+                this.sipClient.answer()
             },
             hold() {
                 console.log("点击保持按钮")
-                cti.hold()
+                this.sipClient.hold()
             },
             unhold() {
                 console.log("点击取消保持按钮")
-                cti.unhold()
+                this.sipClient.unhold()
             },
             makeCall() {
                 console.log("点击拨打按钮")
@@ -354,17 +355,17 @@
                 }
                 localStorage.setItem("callPhoneNumber", this.callPhoneNumber)
                 this.discallee = this.callPhoneNumber
-                let callId = cti.call(this.callPhoneNumber.trim());
+                let callId = this.sipClient.call(this.callPhoneNumber.trim());
             },
             hungup() {
                 console.log("点击挂断按钮");
-                cti.hangup()
+                this.sipClient.hangup()
             },
             //按键
             pressNumber(tone) {
                 //在通话中就发送
                 if (this.statusIsCall) {
-                    cti.sendDtmf(tone);
+                    this.sipClient.sendDtmf(tone);
                     return
                 }
                 if (this.callPhoneNumber) {
@@ -385,6 +386,8 @@
                 switch (event) {
                     case "REGISTERED":
                         this.statusIsLogin = true;
+                        this.saveHistoryAccounts()
+                        this.agentNo = data.localAgent;
                         break;
                     case "UNREGISTERED":
                         this.statusIsLogin = false;
@@ -431,9 +434,7 @@
                     case "CONNECTED":
                         //已连接
                         this.loading.close();
-                        this.saveHistoryAccounts()
-                        this.agentNo = data.localAgent;
-                        cti.register()
+                        this.sipClient.register()
                         break;
                     case "DISCONNECT":
                         console.log("DISCONNECT", data.msg)
