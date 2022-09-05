@@ -1,32 +1,73 @@
 # 话务条([demo](https://softphone.xsdhy.com/))
-本项目为基于JsSIP实现的webrtc软电话条、话务条，可以对接opensips、freeswitch。
+本项目是基于JsSIP实现的webrtc软电话条、话务条。不依赖于其他业务系统，支持直接对接opensips、freeswitch。
+支持react、vue、jquery、原生js。
 
 ## 使用说明
 
-index.html只是调用示例，src/index.js才是sdk源文件  
-通过以下方式构建
+### 安装
+
+#### 使用 npm 或 yarn 安装#
+我们推荐使用 npm 或 yarn 的方式进行开发，不仅可在开发环境轻松调试，也可放心地在生产环境打包部署使用，享受整个生态圈和工具链带来的诸多好处。
 ```
-yarn && yarn build
+npm install sip-call --save
+yarn add sip-call
 ```
-构建后会在dist目录下生成ctibar.js，引入到自己项目中即可
+
+#### 浏览器引入
+在浏览器中使用 script 和 link 标签直接引入文件，并使用全局变量 SipCall。
+我们在 npm 发布包内的 sip-js/lib 目录下提供了 bundle.browser.js
+
+### 快速上手
+
+
+```
+let stateEventListener = (event, data) => {
+switch(event){
+    case "ERROR":
+    
+    break
+    case "CONNECTED":
+    
+    break
+    
+    ......
+    
+    default:
+    
+    }
+}
+
+let config = {
+    host: '10.133.35.89',
+    port: '5066',
+    proto: false,
+    extNo: '1001',
+    extPwd: '123456',
+    autoRegister: true,
+    stateEventListener: stateEventListener
+}
+this.sipClient = new SipCall(config)
+```
+
+
 
 
 ## 文档说明
 
 提供如下方法：
 
-| 函数    | 调用方式和                         | 说明         |
-|-------|-------------------------------|------------|
-| 初始化   | Ctibar.initSDK(config)        |            |
-| 销毁SDK | Ctibar.cleanSDK()             |            |
-| 注册    | Ctibar.register()             |            |
-| 取消注册  | Ctibar.unregister()           |            |
-| 呼叫请求  | Ctibar.makecall(phone) | 真实外呼需要传的参数 |
-| 挂断电话  | Ctibar.hangup()               |            |
-| 应答接听  | Ctibar.answer()               |            |
-| 保持    | Ctibar.hold()                 |            |
-| 取消保持  | Ctibar.unhold()               |            |
-| 转接通话  | Ctibar.transfer(phone)        |            |
+| 函数    | 调用方式和                     | 说明         |
+|-------|---------------------------|------------|
+| 初始化   | initSDK(config)    |            |
+| 销毁SDK | cleanSDK()         |            |
+| 注册    | register()         |            |
+| 取消注册  | unregister()       |            |
+| 呼叫请求  | call(phone) | 真实外呼需要传的参数 |
+| 挂断电话  | hangup()           |            |
+| 应答接听  | answer()           |            |
+| 保持    | hold()             |            |
+| 取消保持  | unhold()           |            |
+| 转接通话  | transfer(phone)    |            |
 
 以下对几个特殊的方法进行说明：
 
@@ -46,18 +87,7 @@ yarn && yarn build
 
 使用样例：
 
-```
-let config = {
-    host: '10.133.35.89',
-    port: '5066',
-    proto: false,
-    extNo: '1001',
-    extPwd: '123456',
-    autoRegister: true,
-    stateEventListener: stateEventListener
-}
-Ctibar.initSDK(config)
-```
+
 
 
 ### 状态回调（stateEventListener）
@@ -80,20 +110,3 @@ stateEventListener回调参数为 event, data
 | HOLD                        | 无返回值                                                                                                                                     | 保持中           |
 | CALL_END                    | 无返回值                                                                                                                                     | 通话结束          |
 
-```
-const stateEventListener = (event, data) => {
-switch(event){
-    case "ERROR":
-    
-    break
-    case "CONNECTED":
-    
-    break
-    
-    ......
-    
-    default:
-    
-    }
-}
-```

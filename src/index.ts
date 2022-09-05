@@ -154,7 +154,7 @@ export default class SipCall {
             session_timers: false,
             // connection_recovery_max_interval:30,
             // connection_recovery_min_interval:4,
-            user_agent: 'JsSIP'
+            user_agent: 'JsSIP 3.9.0'
         })
 
         //websocket连接成功
@@ -355,7 +355,8 @@ export default class SipCall {
                 extraHeaders: ["X-JCallId: " + this.currentCallId, "X-JOutNumber: " + outNumber],
                 sessionTimersExpires: 120,
                 pcConfig: {
-                    iceTransportPolicy: this.ice.username ? "relay" : "all",
+                    // iceTransportPolicy: this.ice.username ? "relay" : "all",
+                    iceTransportPolicy:  "all",
                     iceServers: [this.ice]
                 }
             })
