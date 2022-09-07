@@ -355,8 +355,7 @@ export default class SipCall {
                 extraHeaders: ["X-JCallId: " + this.currentCallId, "X-JOutNumber: " + outNumber],
                 sessionTimersExpires: 120,
                 pcConfig: {
-                    // iceTransportPolicy: this.ice.username ? "relay" : "all",
-                    iceTransportPolicy:  "all",
+                    iceTransportPolicy: this.ice.username ? "relay" : "all",
                     iceServers: [this.ice]
                 }
             })
