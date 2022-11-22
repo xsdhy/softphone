@@ -106,7 +106,7 @@
                                @click="makeCall"></el-button>
                 </div>
             </div>
-            <div  style="display: flex;width: 100%;">
+            <div style="display: flex;width: 100%;">
                 <div style="width:75%;">
                     <div style="display: flex;height: 50px;">
                         <div class="number-card-button" @click="pressNumber('7')">7</div>
@@ -139,33 +139,39 @@
                     <el-form-item label="sip端口">
                         <el-input type="text" v-model="configuration.port" maxlength="5" clearable/>
                     </el-form-item>
-                    <el-form-item label="ssl">
-                        <el-switch v-model="configuration.proto"/>
-                    </el-form-item>
-                    <el-form-item label="domain">
-                        <el-input type="text" v-model="configuration.domain" placeholder="选填" clearable/>
-                    </el-form-item>
+
                     <el-form-item label="分机号">
                         <el-input type="text" v-model="configuration.extNo" clearable/>
                     </el-form-item>
                     <el-form-item label="分机密码">
                         <el-input type="password" v-model="configuration.extPwd" clearable show-password/>
                     </el-form-item>
-                    <el-form-item label="打洞">
-                        <el-radio-group v-model="configuration.stun.type">
-                            <el-radio label="stun">stun</el-radio>
-                            <el-radio label="turn">turn</el-radio>
-                        </el-radio-group>
-                    </el-form-item>
-                    <el-form-item label="打洞host">
-                        <el-input type="text" v-model="configuration.stun.host" clearable/>
-                    </el-form-item>
-                    <el-form-item v-if="configuration.stun.type==='turn'" label="username">
-                        <el-input type="text" v-model="configuration.stun.username" clearable/>
-                    </el-form-item>
-                    <el-form-item v-if="configuration.stun.type==='turn'" label="password">
-                        <el-input type="password" v-model="configuration.stun.password" clearable/>
-                    </el-form-item>
+
+                    <el-collapse>
+                        <el-collapse-item title="高级设置">
+                            <el-form-item label="ssl">
+                                <el-switch v-model="configuration.proto"/>
+                            </el-form-item>
+                            <el-form-item label="domain">
+                                <el-input type="text" v-model="configuration.domain" placeholder="选填" clearable/>
+                            </el-form-item>
+                            <el-form-item label="打洞">
+                                <el-radio-group v-model="configuration.stun.type">
+                                    <el-radio label="stun">stun</el-radio>
+                                    <el-radio label="turn">turn</el-radio>
+                                </el-radio-group>
+                            </el-form-item>
+                            <el-form-item label="打洞host">
+                                <el-input type="text" v-model="configuration.stun.host" clearable/>
+                            </el-form-item>
+                            <el-form-item v-if="configuration.stun.type==='turn'" label="username">
+                                <el-input type="text" v-model="configuration.stun.username" clearable/>
+                            </el-form-item>
+                            <el-form-item v-if="configuration.stun.type==='turn'" label="password">
+                                <el-input type="password" v-model="configuration.stun.password" clearable/>
+                            </el-form-item>
+                        </el-collapse-item>
+                    </el-collapse>
                 </el-form>
             </div>
 
@@ -197,10 +203,10 @@
                             <template slot-scope="scope">
                                 <el-button-group>
                                     <el-button size="mini" type="primary" :disabled="statusIsLogin"
-                                               @click="useHistoryAccounts(scope.row)">使用
+                                               @click="useHistoryAccounts(scope.row.host+scope.row.extNo)">使用
                                     </el-button>
                                     <el-button size="mini" type="danger" :disabled="statusIsLogin"
-                                               @click="delHistoryAccounts(scope.$index)">删除
+                                               @click="accountDel(scope.row.host+scope.row.extNo)">删除
                                     </el-button>
                                 </el-button-group>
                             </template>
@@ -241,7 +247,6 @@
         </el-tab-pane>
 
     </el-tabs>
-
 
 
     <div id="footer">Power By <a target="_blank" href="https://github.com/xsdhy/softphone">xsdhy</a></div>
@@ -302,12 +307,11 @@
                 mediaDevices: null,
 
                 loading: null,
-                sipClient:undefined,
+                sipClient: undefined,
             }
         },
         created() {
             console.log("v2.0.1");
-            let account = this.getQueryVariable("u")
 
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
@@ -325,6 +329,7 @@
                     });
                     return;
                 }
+                this.saveHistoryAccounts();
                 this.loading = this.$loading({text: '登录中...'});
                 this.sipClient = new SipCall(this.configuration);
             },
@@ -375,9 +380,9 @@
                 }
             },
             //退格
-            backspaceNumber(){
-                if (this.callPhoneNumber && this.callPhoneNumber.length>0) {
-                    this.callPhoneNumber = this.callPhoneNumber.substring(0,this.callPhoneNumber.length-1)
+            backspaceNumber() {
+                if (this.callPhoneNumber && this.callPhoneNumber.length > 0) {
+                    this.callPhoneNumber = this.callPhoneNumber.substring(0, this.callPhoneNumber.length - 1)
                 }
             },
             //事件回调
@@ -386,7 +391,6 @@
                 switch (event) {
                     case "REGISTERED":
                         this.statusIsLogin = true;
-                        this.saveHistoryAccounts()
                         this.agentNo = data.localAgent;
                         break;
                     case "UNREGISTERED":
@@ -522,33 +526,61 @@
                     document.body.removeChild(ringAudio);
                 }
             },
-            //初始化历史账号，每次页面重新打开的时候执行
-            initHistoryAccounts() {
+
+
+            accountGetAll() {
                 let historyAccounts = localStorage.getItem("historyAccounts")
                 if (null != historyAccounts) {
-                    this.historyAccounts = JSON.parse(historyAccounts)
+                    return JSON.parse(historyAccounts)
                 }
-                if (this.historyAccounts.length <= 0) {
-                    return;
+                return null
+            },
+            accountGet(accountKey) {
+                let accounts = this.accountGetAll();
+                if (null == accounts) {
+                    return null;
                 }
-
-                //查看最后一次使用的账号是什么，若有则使用
-                let lastAccount = localStorage.getItem("lastAccount")
-                if (lastAccount === "") {
-                    this.useHistoryAccounts(this.historyAccounts[0])
-                    return
-                }
-                for (let index = 0; index < this.historyAccounts.length; index++) {
-                    let id = this.historyAccounts[index].extNo + "@" + this.historyAccounts[index].host + ":" + this.historyAccounts[index].port;
-                    if (lastAccount === id) {
-                        this.useHistoryAccounts(this.historyAccounts[index])
-                        break
+                for (let index = 0; index < accounts.length; index++) {
+                    let id = accounts[index].host + accounts[index].extNo;
+                    if (accountKey === id) {
+                        return accounts[index];
                     }
                 }
+                return null;
+            },
+            accountDel(accountKey) {
+                let accounts = this.accountGetAll();
+                if (null == accounts) {
+                    return;
+                }
+                for (let index = 0; index < accounts.length; index++) {
+                    let id = accounts[index].host + accounts[index].extNo;
+                    if (accountKey === id) {
+                        accounts.splice(index, 1);
+                        localStorage.setItem("historyAccounts", JSON.stringify(accounts))
+                        return;
+                    }
+                }
+                this.historyAccounts = this.accountGetAll()
+            },
+            accountAdd(account) {
+                let accountKey = account.host + account.extNo
+                if (null != this.accountGet(accountKey)) {
+                    this.accountEdit(accountKey)
+                    return
+                }
+                var accounts = this.accountGetAll();
+                accounts.push(account)
+                localStorage.setItem("historyAccounts", JSON.stringify(accounts))
+                this.historyAccounts = this.accountGetAll()
+            },
+            accountEdit(accountKey, account) {
+                this.accountDel(accountKey)
+                this.accountAdd(account)
             },
             //使用历史账号
-            useHistoryAccounts(item) {
-                console.log("使用历史账号:", item)
+            useHistoryAccounts(accountKey) {
+                let item = this.accountGet(accountKey)
                 this.configuration.host = item.host;
                 this.configuration.port = item.port;
                 this.configuration.proto = item.proto;
@@ -559,46 +591,41 @@
                     this.configuration.stun = item.stun;
                 }
             },
-            //分享历史账号
-            shareAccount(item) {
-                return window.btoa(JSON.stringify(item))
-            },
-            //删除历史账号
-            delHistoryAccounts(i) {
-                if (this.historyAccounts.length > 0) {
-                    this.historyAccounts.splice(i)
-                    localStorage.setItem("historyAccounts", JSON.stringify(this.historyAccounts))
+            //初始化历史账号，每次页面重新打开的时候执行
+            initHistoryAccounts() {
+                let accounts = this.accountGetAll()
+                if (accounts) {
+                    this.historyAccounts = accounts
+                } else {
+                    return
+                }
+                //查看最后一次使用的账号是什么，若有则使用
+                let lastAccount = localStorage.getItem("lastAccount")
+                if (null != this.accountGet(lastAccount)) {
+                    this.useHistoryAccounts(lastAccount)
+                } else {
+                    this.useHistoryAccounts(this.historyAccounts[0].host + this.historyAccounts[0].extNo)
                 }
             },
             //保存账号:登录成功的时候执行
             saveHistoryAccounts() {
-                let is_add = true;
-                for (let index = 0; index < this.historyAccounts.length; index++) {
-                    if (this.historyAccounts[index].host === this.configuration.host && this.historyAccounts[index].extNo === this.configuration.extNo) {
-                        is_add = false;
-                        this.historyAccounts[index].host = this.configuration.host;
-                        this.historyAccounts[index].port = this.configuration.port;
-                        this.historyAccounts[index].proto = this.configuration.proto;
-                        this.historyAccounts[index].domain = this.configuration.domain;
-                        this.historyAccounts[index].extNo = this.configuration.extNo;
-                        this.historyAccounts[index].extPwd = this.configuration.extPwd;
-                        this.historyAccounts[index].stun = this.configuration.stun;
-                    }
-                }
-                if (is_add) {
-                    this.historyAccounts.push({
-                        host: this.configuration.host,
-                        port: this.configuration.port,
-                        proto: this.configuration.proto,
-                        domain: this.configuration.domain,
-                        extNo: this.configuration.extNo,
-                        extPwd: this.configuration.extPwd,
-                        stun: this.configuration.stun,
-                    })
-                }
-                localStorage.setItem("lastAccount", this.configuration.extNo + "@" + this.configuration.host + ":" + this.configuration.port)
-                localStorage.setItem("historyAccounts", JSON.stringify(this.historyAccounts))
+                var accountKey = this.configuration.host + this.configuration.extNo;
+                this.accountEdit(accountKey, this.configuration)
+                localStorage.setItem("lastAccount", accountKey)
             },
+            useShareAccount() {
+                var queryVariable = this.getQueryVariable("u");
+                if (queryVariable) {
+
+                    console.log("====>", JSON.parse(window.atob(this.getQueryVariable("u"))))
+                }
+            },
+            //分享历史账号
+            shareAccount(item) {
+                return window.location.host + "?u=" + window.btoa(JSON.stringify(item))
+            },
+
+
             //麦克风音量检测-开始
             testMicrophoneHandelStart() {
                 SipCall.testMicrophone((volume) => {
