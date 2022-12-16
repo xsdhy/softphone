@@ -526,14 +526,12 @@
                     document.body.removeChild(ringAudio);
                 }
             },
-
-
             accountGetAll() {
                 let historyAccounts = localStorage.getItem("historyAccounts")
                 if (null != historyAccounts) {
                     return JSON.parse(historyAccounts)
                 }
-                return null
+                return []
             },
             accountGet(accountKey) {
                 let accounts = this.accountGetAll();
@@ -594,7 +592,7 @@
             //初始化历史账号，每次页面重新打开的时候执行
             initHistoryAccounts() {
                 let accounts = this.accountGetAll()
-                if (accounts) {
+                if (accounts && accounts.length > 0) {
                     this.historyAccounts = accounts
                 } else {
                     return

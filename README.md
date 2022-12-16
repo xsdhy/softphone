@@ -16,6 +16,9 @@ yarn add sip-call
 #### 浏览器引入
 在浏览器中使用 script 和 link 标签直接引入文件，并使用全局变量 SipCall。
 我们在 npm 发布包内的 sip-js/lib 目录下提供了 bundle.browser.js
+```
+<script src="lib/bundle.browser.js"></script>
+```
 
 ### 快速上手
 
@@ -49,16 +52,13 @@ let config = {
 this.sipClient = new SipCall(config)
 ```
 
-
-
-
 ## 文档说明
 
 提供如下方法：
 
-| 函数    | 调用方式和                     | 说明         |
-|-------|---------------------------|------------|
-| 初始化   | initSDK(config)    |            |
+| 函数    | 调用方式                     | 说明         |
+|-------|--------------------------|------------|
+| 初始化   | new SipCall(config)    |            |
 | 销毁SDK | cleanSDK()         |            |
 | 注册    | register()         |            |
 | 取消注册  | unregister()       |            |
@@ -86,8 +86,6 @@ this.sipClient = new SipCall(config)
 | autoRegister       | bool类型 true/false，initSDK调用后是否自动注册     | 不填默认为false |
 
 使用样例：
-
-
 
 
 ### 状态回调（stateEventListener）
