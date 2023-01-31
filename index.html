@@ -278,7 +278,7 @@
                         password: '',
                     },
                     autoRegister: false,
-                    debug: true,
+                    debug: false,
                     stateEventListener: this.stateEventListener
                 },
 
@@ -311,7 +311,7 @@
             }
         },
         created() {
-            console.log("v2.0.1");
+            console.log("v2.0.2");
 
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
