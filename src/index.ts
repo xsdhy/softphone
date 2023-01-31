@@ -167,7 +167,7 @@ export default class SipCall {
         })
         //websocket连接失败
         this.ua.on('disconnected', (e) => {
-            //ua.stop()
+            this.ua.stop()
             this.onChangeState(State.DISCONNECTED, null)
         })
         //注册成功
@@ -176,19 +176,19 @@ export default class SipCall {
         })
         //取消注册
         this.ua.on('unregistered', (e) => {
-            console.log("unregistered:", e)
+            console.log("unregistered:", e);
+            this.ua.stop();
             this.onChangeState(State.UNREGISTERED, {localAgent: this.localAgent})
         })
         //注册失败
         this.ua.on('registrationFailed', (e) => {
             console.error("registrationFailed", e)
-            let msg = '注册失败,请检查账号密码是否正确。' + e.cause
-            this.onChangeState(State.REGISTER_FAILED, {msg: msg})
+            this.onChangeState(State.REGISTER_FAILED, {msg: '注册失败:' + e.cause})
+            this.ua.stop()
         })
-        //Fired a few seconds before the registration expires. If the application does not set any listener for this event,
-        // JsSIP will just re-register as usual.
+        //Fired a few seconds before the registration expires
         this.ua.on('registrationExpiring', (e) => {
-            console.error("registrationExpiring")
+            console.log("registrationExpiring")
             this.ua.register()
         })
 
