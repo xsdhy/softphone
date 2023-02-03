@@ -4,13 +4,15 @@
     <title>话务条</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
     <script src="lib/bundle.browser.js"></script>
-    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.min.js"></script>
+        <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.min.js"></script>
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vConsole/3.12.1/vconsole.min.js"
             type="application/javascript"></script>
     <link rel="stylesheet"
           href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/theme-chalk/index.min.css">
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/index.min.js"></script>
     <script src="https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_14274_24.f20fe80492657f7818c76ceda219ec70.js"></script>
+    <script src="https://unpkg.com/vue-i18n@8.9.0/dist/vue-i18n.js"></script>
+
 </head>
 <body>
 <div id="app">
@@ -24,57 +26,58 @@
                 <div v-if="!statusIsCall && !statusIsring">
                     <div v-show="!statusIsLogin" style="padding:10px 0 0 0px;">
                         <el-badge is-dot type="info" class="item"></el-badge>
-                        分机未登录
+                        {{ $t("message.NotLoggedIn") }}
                     </div>
                     <div v-show="statusIsLogin" style="padding:10px 0 0 0px;">
                         <el-badge is-dot type="success" class="item"></el-badge>
-                        在线:<span class="number">{{ agentNo }}</span>
+                        {{ $t('message.online') }}:<span class="number">{{ agentNo }}</span>
                     </div>
                 </div>
                 <div v-show="statusIsCall || statusIsring">
-                    <div class="text">号码：<span class="number">{{ discallee }}</span></div>
-                    <div class="text">时长：<span class="number">{{ callTime }}</span></div>
+                    <div class="text">{{$t('message.number')}}：<span class="number">{{ discallee }}</span></div>
+                    <div class="text">{{$t('message.duration')}}：<span class="number">{{ callTime }}</span></div>
                 </div>
             </div>
 
             <div class="btn">
-
                 <div v-if="!statusIsCall">
                     <div v-if="!statusIsLogin" class="soft-function" @click="login">
                         <iconpark-icon name="checkIn-qianru"></iconpark-icon>
-                        <div class="text">登录</div>
+                        <div class="text">{{$t('message.login')}}</div>
                     </div>
                     <div v-else class="soft-function" @click="logout">
                         <iconpark-icon name="checkOut-qianchu"></iconpark-icon>
-                        <div class="text">登出</div>
+                        <div class="text">{{$t('message.logout')}}</div>
                     </div>
                 </div>
 
                 <div v-if="statusIsCall" class="soft-function" :class="{disabled:!statusIsCall}">
                     <iconpark-icon name="transfer-zhuanjie"></iconpark-icon>
-                    <div class="text">转接</div>
+                    <div class="text">{{$t('message.transfer')}}</div>
                 </div>
 
                 <div v-if="statusIsCall" :class="{disabled:!statusIsCall}">
                     <div v-if="!statusIsHold" class="soft-function" :class="{hold:!statusIsHold}" @click="hold">
                         <iconpark-icon name="keepHold-baochi"></iconpark-icon>
-                        <div class="text">保持</div>
+                        <div class="text">{{$t('message.hold')}}</div>
                     </div>
                     <div v-else class="soft-function" :class="{unhold:statusIsHold}" @click="unhold">
                         <iconpark-icon name="takeBack-jiehui"></iconpark-icon>
-                        <div class="text">取回</div>
+                        <div class="text">{{$t('message.retrieve')}}</div>
                     </div>
                 </div>
 
-                <div class="soft-function" :class="{disabled:!(statusIsring || statusIsCall)}" @click="hungup">
+                <div v-if="(statusIsring || statusIsCall)" class="soft-function"
+                     :class="{disabled:!(statusIsring || statusIsCall)}" @click="hungup">
                     <iconpark-icon name="phone-off"></iconpark-icon>
-                    <div class="text">挂断</div>
+                    <div class="text">{{$t('message.hangUp')}}</div>
                 </div>
 
-                <div class="soft-function" :class="{disabled:!(statusIsring && 'inbound' === callDirection)}"
+                <div v-if="(statusIsring && 'inbound' === callDirection)" class="soft-function"
+                     :class="{disabled:!(statusIsring && 'inbound' === callDirection)}"
                      @click="answer">
                     <iconpark-icon name="phone-call"></iconpark-icon>
-                    <div class="text">接听</div>
+                    <div class="text">{{$t('message.answer')}}</div>
                 </div>
             </div>
         </div>
@@ -82,7 +85,7 @@
 
     <el-card v-show="statusIsLogin" class="config">
         <div>
-            <el-input v-model="callPhoneNumber" placeholder="请输入外呼号码"></el-input>
+            <el-input v-model="callPhoneNumber" :placeholder="$t('message.pleaseEnterTheOutboundNumber')"></el-input>
         </div>
         <div style="margin-top: 5px">
             <div style="display: flex;width: 100%;">
@@ -130,25 +133,35 @@
     </el-card>
 
     <el-tabs v-show="!statusIsLogin" class="config" type="border-card" v-model="activeTabName">
-        <el-tab-pane label="参数设置" name="base">
+        <el-tab-pane :label="$t('message.ParameterSetting')" name="base">
             <div>
-                <el-form ref="form" size="mini" label-position="left" label-width="80px">
-                    <el-form-item label="sip服务器">
+                <el-form ref="form" size="mini" label-position="left" label-width="100px">
+                    <el-form-item :label="$t('message.serverAddress')">
                         <el-input type="text" v-model="configuration.host" clearable/>
                     </el-form-item>
-                    <el-form-item label="sip端口">
+                    <el-form-item :label="$t('message.serverPort')">
                         <el-input type="text" v-model="configuration.port" maxlength="5" clearable/>
                     </el-form-item>
 
-                    <el-form-item label="分机号">
+                    <el-form-item :label="$t('message.extensionNumber')">
                         <el-input type="text" v-model="configuration.extNo" clearable/>
                     </el-form-item>
-                    <el-form-item label="分机密码">
+                    <el-form-item :label="$t('message.password')">
                         <el-input type="password" v-model="configuration.extPwd" clearable show-password/>
                     </el-form-item>
 
                     <el-collapse>
-                        <el-collapse-item title="高级设置">
+                        <el-collapse-item :title="$t('message.advancedSetting')">
+
+                            <el-form-item label="Language">
+                                <el-select v-model="locale" @change="chooseLanguage">
+                                    <el-option
+                                            v-for="item in locales"
+                                            :key="item.value" :label="item.label" :value="item.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+
                             <el-form-item label="ssl">
                                 <el-switch v-model="configuration.proto"/>
                             </el-form-item>
@@ -176,18 +189,21 @@
             </div>
 
             <div v-if="historyAccounts.length>0">
-                <el-divider content-position="left">历史账号</el-divider>
+                <el-divider content-position="left">{{$t("message.historicalAccountNumber")}}</el-divider>
                 <div>
                     <el-table :data="historyAccounts" stripe style="width: 100%" size="mini" :show-header="false">
                         <el-table-column type="expand" width="15">
                             <template slot-scope="props">
                                 <el-descriptions :column="1" size="mini" border>
-                                    <el-descriptions-item label="服务器">{{ props.row.host }}:{{ props.row.port }}
+                                    <el-descriptions-item :label="$t('message.serverAddress')">{{ props.row.host
+                                        }}:{{ props.row.port }}
                                     </el-descriptions-item>
-                                    <el-descriptions-item label="domain">{{ props.row.domain }}</el-descriptions-item>
-                                    <el-descriptions-item label="分机号">{{ props.row.extNo }}</el-descriptions-item>
-                                    <el-descriptions-item label="密码">{{ props.row.extPwd }}</el-descriptions-item>
-                                    <el-descriptions-item label="分享">{{ shareAccount(props.row) }}
+                                    <el-descriptions-item :label="domain">{{ props.row.domain }}</el-descriptions-item>
+                                    <el-descriptions-item :label="$t('message.extensionNumber')">{{ props.row.extNo }}
+                                    </el-descriptions-item>
+                                    <el-descriptions-item :label="$t('message.password')">{{ props.row.extPwd }}
+                                    </el-descriptions-item>
+                                    <el-descriptions-item :label="$t('message.share')">{{ shareAccount(props.row) }}
                                     </el-descriptions-item>
                                 </el-descriptions>
                             </template>
@@ -203,10 +219,12 @@
                             <template slot-scope="scope">
                                 <el-button-group>
                                     <el-button size="mini" type="primary" :disabled="statusIsLogin"
-                                               @click="useHistoryAccounts(scope.row.host+scope.row.extNo)">使用
+                                               @click="useHistoryAccounts(scope.row.host+scope.row.extNo)">
+                                        {{$t("message.use")}}
                                     </el-button>
                                     <el-button size="mini" type="danger" :disabled="statusIsLogin"
-                                               @click="accountDel(scope.row.host+scope.row.extNo)">删除
+                                               @click="accountDel(scope.row.host+scope.row.extNo)">
+                                        {{$t("message.delete")}}
                                     </el-button>
                                 </el-button-group>
                             </template>
@@ -217,13 +235,13 @@
 
         </el-tab-pane>
 
-        <el-tab-pane label="调试信息" name="test">
-            <el-divider content-position="left">设备列表</el-divider>
+        <el-tab-pane :label="$t('message.DebuggingInformation')" name="test">
+            <el-divider content-position="left">{{$t('message.equipmentList')}}</el-divider>
             <li v-for="(device,index) in mediaDevices">
                 {{ device.kindText }}-{{ device.label }}
             </li>
 
-            <el-divider content-position="left">麦克风测试</el-divider>
+            <el-divider content-position="left">{{$t('message.microphoneTest')}}</el-divider>
 
             <el-row>
                 <el-col :span="16">
@@ -232,14 +250,16 @@
                 </el-col>
                 <el-col :span="8">
                     <el-button size="mini" type="danger" round v-if="testMicrophoneOb"
-                               @click="testMicrophoneHandelStop">结束测试
+                               @click="testMicrophoneHandelStop">
+                        {{ $t('message.endTesting')}}
                     </el-button>
-                    <el-button size="mini" type="success" round v-else @click="testMicrophoneHandelStart">开始测试
+                    <el-button size="mini" type="success" round v-else @click="testMicrophoneHandelStart">
+                        {{$t('message.startTesting')}}
                     </el-button>
                 </el-col>
             </el-row>
 
-            <el-divider content-position="left">耳机测试</el-divider>
+            <el-divider content-position="left">{{$t('message.headphoneTest')}}</el-divider>
             <audio style="height: 30px" controls="" :loop="false" :autoplay="false"
                    src="https://web.sdk.qcloud.com/trtc/webrtc/assets/testspeak.mp3"></audio>
 
@@ -259,8 +279,87 @@
         var vConsole = new VConsole();
     }
 
+    const messages = {
+        zh: {
+            message: {
+                login: '登录',
+                answer: '接听',
+                hangUp: '挂断',
+                hold: '保持',
+                retrieve: '取回',
+                transfer: '转接',
+                landing: '登陆中',
+                logout: '退出',
+                online: '在线',
+                number: '号码',
+                duration: '时长',
+                NotLoggedIn: '未登录',
+                ParameterSetting: '参数设置',
+                serverAddress: '服务器地址',
+                serverPort: '服务器端口',
+                extensionNumber: '分机号',
+                password: '密码',
+                share: '分享',
+                advancedSetting: '高级设置',
+                historicalAccountNumber: '历史账号',
+                use: '使用',
+                delete: '删除',
+                DebuggingInformation: '调试信息',
+                equipmentList: '设备列表',
+                microphoneTest: '麦克风测试',
+                startTesting: '开始测试',
+                endTesting: '结束测试',
+                headphoneTest: '耳机测试',
+                pleaseEnterTheOutboundNumber: '请输入外呼号码',
+                noAccountInformationWasEntered: '请先在参数配置中输入账号信息',
+                theCalledWasNotEntered: '请输入要拨打的号码',
+            }
+        },
+        en: {
+            message: {
+                login: 'Login',
+                answer: 'Answer',
+                hangUp: 'HangUp',
+                hold: 'Hold',
+                retrieve: 'Retrieve',
+                transfer: 'Transfer',
+                landing: 'Landing',
+                logout: 'Logout',
+                online: 'Online',
+                number: 'Number',
+                duration: 'Duration',
+                NotLoggedIn: 'Unregistered',
+                ParameterSetting: 'ParameterSetting',
+                serverAddress: 'ServerAddr',
+                serverPort: 'ServerPort',
+                extensionNumber: 'ExtNumber',
+                password: 'Password',
+                share: 'Share',
+                advancedSetting: 'AdvancedSetting',
+                historicalAccountNumber: 'Historical Account Number',
+                use: 'Use',
+                delete: 'Del',
+                DebuggingInformation: 'DebuggingInformation',
+                equipmentList: 'Device List',
+                microphoneTest: 'Microphone Test',
+                startTesting: 'StartTesting',
+                endTesting: 'EndTheTest',
+                headphoneTest: 'Headset Test',
+                pleaseEnterTheOutboundNumber: 'Please Enter The Outbound Number',
+                noAccountInformationWasEntered: 'Enter the account information in the parameter configuration first',
+                theCalledWasNotEntered: 'Please enter the number you want to dial',
+            }
+        },
+    }
+    // 通过选项创建 VueI18n 实例
+    const i18n = new VueI18n({
+        locale: 'zh', // 设置地区
+        messages, // 设置地区信息
+    })
+
     new Vue({
         el: '#app',
+        i18n,
         data() {
             return {
                 activeTabName: "base",
@@ -308,13 +407,28 @@
 
                 loading: null,
                 sipClient: undefined,
+                locale:'zh',
+                locales:[
+                    {"label":"简体中文", "value":"zh"},
+                    {"label":"English", "value":"en"}
+                ],
             }
         },
         created() {
-            console.log("v2.0.2");
+            console.log("v2.0.3");
 
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
+
+            this.locale = this.getQueryVariable("l");
+            if (!this.locale) {
+                this.locale = localStorage.getItem("locale")
+            }
+            if (!this.locale) {
+                this.locale = "zh"
+            }
+            localStorage.setItem("locale",this.locale)
+            i18n.locale = this.locale
 
             SipCall.getMediaDeviceInfo().then((res) => {
                 this.mediaDevices = res;
@@ -324,13 +438,13 @@
             login() {
                 if (this.configuration.host.length <= 3 || this.configuration.extNo.length <= 3 || this.configuration.extPwd.length <= 3) {
                     this.$message({
-                        message: '请先在参数配置中输入账号信息',
+                        message: this.$t('message.noAccountInformationWasEntered'),
                         type: 'warning'
                     });
                     return;
                 }
                 this.saveHistoryAccounts();
-                this.loading = this.$loading({text: '登录中...'});
+                this.loading = this.$loading({text: 'loading...'});
                 this.sipClient = new SipCall(this.configuration);
             },
             logout() {
@@ -353,7 +467,7 @@
                 console.log("点击拨打按钮")
                 if (this.callPhoneNumber.length <= 2) {
                     this.$message({
-                        message: '请输入要拨打的号码',
+                        message: this.$t('message.theCalledWasNotEntered'),
                         type: 'warning'
                     });
                     return
@@ -622,6 +736,11 @@
             shareAccount(item) {
                 return window.location.host + "?u=" + window.btoa(JSON.stringify(item))
             },
+            chooseLanguage(item) {
+                this.locale=item
+                localStorage.setItem("locale", this.locale)
+                i18n.locale=this.locale;
+            },
 
 
             //麦克风音量检测-开始
@@ -702,10 +821,10 @@
     }
 
     .my-softphone .soft-function {
-        width: 2rem;
+        /*width: 2.5rem;*/
         height: 2.9rem;
         margin-top: 0.3rem;
-        margin-right: 1.2rem;
+        margin-right: 1.3rem;
 
         text-align: center;
         border-radius: 3px;
