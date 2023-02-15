@@ -12,7 +12,6 @@
 npm install sip-call --save
 yarn add sip-call
 ```
-
 #### 浏览器引入
 在浏览器中使用 script 和 link 标签直接引入文件，并使用全局变量 SipCall。
 我们在 npm 发布包内的 sip-js/lib 目录下提供了 bundle.browser.js
@@ -32,18 +31,16 @@ switch(event){
     case "CONNECTED":
     
     break
-    
-    ......
+
     
     default:
     
     }
 }
-
 let config = {
     host: '10.133.35.89',
     port: '5066',
-    proto: false,
+    proto: true,
     extNo: '1001',
     extPwd: '123456',
     autoRegister: true,
@@ -85,7 +82,7 @@ this.sipClient = new SipCall(config)
 | stateEventListener | 状态回调函数方法 参照文档最下方stateEventListener详细说明 | 需注入状态回调    |
 | autoRegister       | bool类型 true/false，initSDK调用后是否自动注册     | 不填默认为false |
 
-使用样例：
+
 
 
 ### 状态回调（stateEventListener）

@@ -152,7 +152,6 @@
 
                     <el-collapse>
                         <el-collapse-item :title="$t('message.advancedSetting')">
-
                             <el-form-item label="Language">
                                 <el-select v-model="locale" @change="chooseLanguage">
                                     <el-option
@@ -161,27 +160,26 @@
                                     </el-option>
                                 </el-select>
                             </el-form-item>
-
-                            <el-form-item label="ssl">
+                            <el-form-item label="SSL">
                                 <el-switch v-model="configuration.proto"/>
                             </el-form-item>
-                            <el-form-item label="domain">
+                            <el-form-item label="Domain">
                                 <el-input type="text" v-model="configuration.domain" placeholder="选填" clearable/>
                             </el-form-item>
-                            <el-form-item label="打洞">
+                            <el-form-item label="IceType">
                                 <el-radio-group v-model="configuration.stun.type">
-                                    <el-radio label="stun">stun</el-radio>
-                                    <el-radio label="turn">turn</el-radio>
+                                    <el-radio label="stun">STUN</el-radio>
+                                    <el-radio label="turn">TURN</el-radio>
                                 </el-radio-group>
                             </el-form-item>
-                            <el-form-item label="打洞host">
+                            <el-form-item label="IceHost">
                                 <el-input type="text" v-model="configuration.stun.host" clearable/>
                             </el-form-item>
                             <el-form-item v-if="configuration.stun.type==='turn'" label="username">
                                 <el-input type="text" v-model="configuration.stun.username" clearable/>
                             </el-form-item>
-                            <el-form-item v-if="configuration.stun.type==='turn'" label="password">
-                                <el-input type="password" v-model="configuration.stun.password" clearable/>
+                            <el-form-item v-if="configuration.stun.type==='turn'" label="credential">
+                                <el-input type="password" v-model="configuration.stun.password" clearable show-password/>
                             </el-form-item>
                         </el-collapse-item>
                     </el-collapse>
@@ -198,7 +196,7 @@
                                     <el-descriptions-item :label="$t('message.serverAddress')">{{ props.row.host
                                         }}:{{ props.row.port }}
                                     </el-descriptions-item>
-                                    <el-descriptions-item :label="domain">{{ props.row.domain }}</el-descriptions-item>
+                                    <el-descriptions-item label="domain">{{ props.row.domain }}</el-descriptions-item>
                                     <el-descriptions-item :label="$t('message.extensionNumber')">{{ props.row.extNo }}
                                     </el-descriptions-item>
                                     <el-descriptions-item :label="$t('message.password')">{{ props.row.extPwd }}

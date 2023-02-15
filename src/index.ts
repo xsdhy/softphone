@@ -355,7 +355,7 @@ export default class SipCall {
                 extraHeaders: ["X-JCallId: " + this.currentCallId, "X-JOutNumber: " + outNumber],
                 sessionTimersExpires: 120,
                 pcConfig: {
-                    iceTransportPolicy: this.ice.username ? "relay" : "all",
+                    iceTransportPolicy:  "all",
                     iceServers: [this.ice]
                 }
             })
@@ -377,7 +377,7 @@ export default class SipCall {
             this.currentSession.answer({
                 mediaConstraints: this.constraints,
                 pcConfig: {
-                    iceTransportPolicy: this.ice.username ? "relay" : "all",
+                    iceTransportPolicy: "all",
                     iceServers: [this.ice]
                 }
             })
