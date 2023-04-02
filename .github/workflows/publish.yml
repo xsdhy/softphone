@@ -2,8 +2,8 @@ name: publishNpm
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*.*.*"
 
 jobs:
   publish-npm:
@@ -14,6 +14,16 @@ jobs:
         with:
           node-version: 10
           registry-url: https://registry.npmjs.org/
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
+      - name: 读取当前版本号
+        id: version
+        uses: ashley-taylor/read-json-property-action@v1.0
+        with:
+          path: ./package.json
+          property: version
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#            files: |
+#              Release.txt
+#              LICENSE
