@@ -54,6 +54,11 @@ interface StateListenerMessage {
     callId?: String;
 }
 
+interface CallExtraParam {
+    outNumber?: string;
+    businessId?: String;
+}
+
 const enum State {
     MIC_ERROR = "MIC_ERROR",//麦克风检测异常
     ERROR = "ERROR",//错误操作或非法操作
@@ -339,10 +344,19 @@ export default class SipCall {
     }
 
     //发起呼叫
-    public call = (phone: string, outNumber: String = ""): String => {
+    public call = (phone: string, param: CallExtraParam = {}): String => {
         //注册情况下发起呼叫
         this.currentCallId = uuidv4();
         if (this.ua && this.ua.isRegistered()) {
+            const extraHeaders:string[]=["X-JCallId: " + this.currentCallId];
+            if (param){
+                if (param.businessId){
+                    extraHeaders.push("X-JBusinessId: " + param.businessId)
+                }
+                if (param.outNumber){
+                    extraHeaders.push("X-JOutNumber: " + param.outNumber)
+                }
+            }
             this.outgoingSession = this.ua.call(phone, {
                 eventHandlers: {
                     //回铃音处理
@@ -351,8 +365,7 @@ export default class SipCall {
                     }
                 },
                 mediaConstraints: this.constraints,
-                //mediaStream: this.localStream,
-                extraHeaders: ["X-JCallId: " + this.currentCallId, "X-JOutNumber: " + outNumber],
+                extraHeaders: extraHeaders,
                 sessionTimersExpires: 120,
                 pcConfig: {
                     iceTransportPolicy:  "all",
