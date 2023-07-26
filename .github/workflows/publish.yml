@@ -22,6 +22,7 @@ jobs:
           path: ./package.json
           property: version
       - run: |
+            npm install --global rollup
             npm run build
       - name: Release
         uses: softprops/action-gh-release@v1
