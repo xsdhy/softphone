@@ -21,14 +21,14 @@ jobs:
         with:
           path: ./package.json
           property: version
-      - run: |
-            npm install --global rollup
-            npm run build
+      - run: echo ${{steps.version.outputs.prop}}
+      - run: yarn
+      - run: yarn run build
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
             tag_name: v${{steps.version.outputs.value}}
-            name: Release ${{steps.version.outputs.value}}
+            name: v${{steps.version.outputs.value}}
             files: |
-              lib/bundle.browser.js
+              ./lib/bundle.browser.js
