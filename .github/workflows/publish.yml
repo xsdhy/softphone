@@ -21,8 +21,7 @@ jobs:
         with:
           path: ./package.json
           property: version
-      - name:
-          run: |
+      - run: |
             npm build
       - name: Release
         uses: softprops/action-gh-release@v1
