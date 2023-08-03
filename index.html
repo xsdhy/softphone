@@ -4,7 +4,7 @@
     <title>话务条</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
     <script src="lib/bundle.browser.js"></script>
-        <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.min.js"></script>
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/2.6.14/vue.min.js"></script>
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vConsole/3.12.1/vconsole.min.js"
             type="application/javascript"></script>
     <link rel="stylesheet"
@@ -51,7 +51,7 @@
                     </div>
                 </div>
 
-                <div v-if="statusIsCall" class="soft-function" :class="{disabled:!statusIsCall}">
+                <div v-if="statusIsCall && false" class="soft-function" :class="{disabled:!statusIsCall}">
                     <iconpark-icon name="transfer-zhuanjie"></iconpark-icon>
                     <div class="text">{{$t('message.transfer')}}</div>
                 </div>
@@ -84,6 +84,10 @@
     </el-card>
 
     <el-card v-show="statusIsLogin" class="config">
+        <div v-if="latency_stat!=undefined">
+            延迟:{{latency_stat.latencyTime}}ms. 丢包: {{(latency_stat.upLossRate * 100).toFixed(2)}}% /
+            {{(latency_stat.downLossRate * 100).toFixed(2)}}%
+        </div>
         <div>
             <el-input v-model="callPhoneNumber" :placeholder="$t('message.pleaseEnterTheOutboundNumber')"></el-input>
         </div>
@@ -179,7 +183,8 @@
                                 <el-input type="text" v-model="configuration.stun.username" clearable/>
                             </el-form-item>
                             <el-form-item v-if="configuration.stun.type==='turn'" label="credential">
-                                <el-input type="password" v-model="configuration.stun.password" clearable show-password/>
+                                <el-input type="password" v-model="configuration.stun.password" clearable
+                                          show-password/>
                             </el-form-item>
                         </el-collapse-item>
                     </el-collapse>
@@ -403,12 +408,14 @@
                 testMicrophoneVolume: 0,
                 mediaDevices: null,
 
+                latency_stat: undefined,
+
                 loading: null,
                 sipClient: undefined,
-                locale:'zh',
-                locales:[
-                    {"label":"简体中文", "value":"zh"},
-                    {"label":"English", "value":"en"}
+                locale: 'zh',
+                locales: [
+                    {"label": "简体中文", "value": "zh"},
+                    {"label": "English", "value": "en"}
                 ],
             }
         },
@@ -425,7 +432,7 @@
             if (!this.locale) {
                 this.locale = "zh"
             }
-            localStorage.setItem("locale",this.locale)
+            localStorage.setItem("locale", this.locale)
             i18n.locale = this.locale
 
             SipCall.getMediaDeviceInfo().then((res) => {
@@ -499,7 +506,6 @@
             },
             //事件回调
             stateEventListener(event, data) {
-                console.log("收到事件", event, data);
                 switch (event) {
                     case "REGISTERED":
                         this.statusIsLogin = true;
@@ -510,6 +516,7 @@
                         this.statusIsHold = false;
                         this.statusIsring = false;
                         this.statusIsCall = false;
+                        this.latency_stat = undefined;
                         break;
                     case "INCOMING_CALL":
                         this.playRingMedia()
@@ -534,6 +541,7 @@
                         this.statusIsring = false;
                         this.statusIsCall = false;
                         this.statusIsHold = false;
+                        this.latency_stat = undefined;
                         break;
                     case "HOLD":
                         this.statusIsHold = true;
@@ -562,10 +570,10 @@
                         this.$message.error(data.msg);
                         break;
                     case "LATENCY_STAT":
-
+                        this.latency_stat = data
                         break;
                     default:
-                        console.log("未处理事件")
+                        console.log("收到事件-未处理", event, data);
                 }
             },
             //启动计时器
@@ -729,7 +737,6 @@
             useShareAccount() {
                 var queryVariable = this.getQueryVariable("u");
                 if (queryVariable) {
-
                     console.log("====>", JSON.parse(window.atob(this.getQueryVariable("u"))))
                 }
             },
@@ -738,9 +745,9 @@
                 return window.location.host + "?u=" + window.btoa(JSON.stringify(item))
             },
             chooseLanguage(item) {
-                this.locale=item
+                this.locale = item
                 localStorage.setItem("locale", this.locale)
-                i18n.locale=this.locale;
+                i18n.locale = this.locale;
             },
 
 
