@@ -413,7 +413,7 @@
             }
         },
         created() {
-            console.log("v2.0.3");
+            console.log("v2.0.4");
 
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
@@ -560,6 +560,9 @@
                     case "REGISTER_FAILED":
                         this.loading.close();
                         this.$message.error(data.msg);
+                        break;
+                    case "LATENCY_STAT":
+
                         break;
                     default:
                         console.log("未处理事件")

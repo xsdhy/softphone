@@ -8,8 +8,14 @@ import {
     PeerConnectionEvent,
     RTCSession
 } from "jssip/lib/RTCSession";
-import {IncomingRTCSessionEvent, OutgoingRTCSessionEvent} from "jssip/lib/UA";
+import {
+    IncomingMessageEvent,
+    IncomingRTCSessionEvent,
+    OutgoingMessageEvent,
+    OutgoingRTCSessionEvent
+} from "jssip/lib/UA";
 import {clearTimeout} from "timers";
+import * as timers from "timers";
 
 
 //初始化配置
@@ -49,9 +55,24 @@ interface RTCIceServer {
 interface StateListenerMessage {
     msg?: string;
     localAgent?: String;
-    direction?: CallDirection;
+    direction?: CallDirection; //呼叫方向
     otherLegNumber?: String;
     callId?: String;
+
+    latencyTime?: number | undefined //网络延迟(ms)
+    upLossRate?: number | undefined //上行-丢包率
+    downLossRate?: number | undefined //下行-丢包率
+}
+
+interface NetworkLatencyStat {
+    roundTripTime: number | undefined //延迟时间(ms)
+
+
+    inboundLost: number | undefined  //下行-丢包数量
+    inboundPacketsSent: number | undefined //下行-包的总数
+
+    outboundLost: number | undefined  //上行-丢包数量
+    outboundPacketsSent: number | undefined //上行-包的总数
 }
 
 interface CallExtraParam {
@@ -72,6 +93,7 @@ const enum State {
     IN_CALL = "IN_CALL",//通话中
     HOLD = "HOLD", //保持中
     CALL_END = "CALL_END", //通话结束
+    LATENCY_STAT = "LATENCY_STAT", //网络延迟统计
 }
 
 
@@ -103,6 +125,11 @@ export default class SipCall {
     private otherLegNumber: String | undefined;
     //当前通话uuid
     private currentCallId: String | undefined;
+
+
+    //当前通话的网络延迟统计定时器(每秒钟获取网络情况)
+    private currentLatencyStatTimer: NodeJS.Timer | undefined;
+    private currentStatReport: NetworkLatencyStat;
 
     //回调函数
     private stateEventListener: Function | undefined;
@@ -272,6 +299,20 @@ export default class SipCall {
             })
         })
 
+
+        this.ua.on('newMessage', (data: IncomingMessageEvent | OutgoingMessageEvent) => {
+            console.log("newMessage:", data)
+            console.log("newMessage-originator:", data.originator)
+            let s = data.message;
+            s.on('succeeded', (evt) => {
+                console.log("newMessage-succeeded:", data, evt)
+            })
+            s.on('failed', (evt) => {
+                console.log("newMessage-succeeded:", data)
+            })
+        })
+
+
         //启动UA
         this.ua.start()
     }
@@ -279,10 +320,82 @@ export default class SipCall {
     //处理音频播放
     private handleAudio(pc: RTCPeerConnection) {
         this.audioView.autoplay = true;
-        pc.onaddstream = (media: { stream: any; }) => {
-            let remoteStream = media.stream;
-            if (remoteStream.active) {
-                this.audioView.srcObject = remoteStream;
+
+        //网络情况统计
+        this.currentStatReport = {
+            outboundPacketsSent: 0,
+            outboundLost: 0,
+            inboundLost: 0,
+            inboundPacketsSent: 0
+        }
+        this.currentLatencyStatTimer = setInterval(() => {
+            pc.getStats().then((stats) => {
+                stats.forEach((report) => {
+                    if (report.type=='media-source'){
+                        // console.log("音量:",report.audioLevel)
+                    }
+                    if (report.type != 'remote-inbound-rtp' && report.type != 'inbound-rtp' && report.type != 'remote-outbound-rtp' && report.type != 'outbound-rtp') {
+                        return
+                    }
+                    switch (report.type) {
+                        case "outbound-rtp"://客户端发送的-上行
+                            this.currentStatReport.outboundPacketsSent = report.packetsSent
+                            break;
+                        case "remote-inbound-rtp"://服务器收到的-对于客户端来说也就是上行
+                            this.currentStatReport.outboundLost = report.packetsLost
+                            //延时(只会在这里有这个)
+                            this.currentStatReport.roundTripTime = report.roundTripTime
+                            break;
+                        case "inbound-rtp"://客户端收到的-下行
+                            this.currentStatReport.inboundLost = report.packetsLost
+                            break;
+                        case "remote-outbound-rtp"://服务器发送的-对于客户端来说就是下行
+                            this.currentStatReport.inboundPacketsSent = report.packetsSent
+                            break
+                    }
+                });
+                let inboundLossRate = 0//下行丢包率
+                let outboundLossRate = 0//上行丢包率
+                let roundTripTime = 0;//延迟
+
+                if (this.currentStatReport.inboundLost && this.currentStatReport.inboundPacketsSent) {
+                    inboundLossRate = this.currentStatReport.inboundLost / this.currentStatReport.inboundPacketsSent;
+                }
+                if (this.currentStatReport.outboundLost && this.currentStatReport.outboundPacketsSent) {
+                    outboundLossRate = this.currentStatReport.outboundLost / this.currentStatReport.outboundPacketsSent;
+                }
+                if (this.currentStatReport.roundTripTime != undefined) {
+                    roundTripTime = Math.floor(this.currentStatReport.roundTripTime * 1000)
+                }
+                console.debug(
+                    '上行/下行(丢包率):' +
+                    (outboundLossRate * 100).toFixed(2) + "% / " +
+                    (inboundLossRate * 100).toFixed(2) + "%",
+                    "延迟:" + roundTripTime.toFixed(2) + "ms"
+                );
+                this.onChangeState(State.LATENCY_STAT, {
+                    latencyTime: roundTripTime,
+                    upLossRate: outboundLossRate,
+                    downLossRate: inboundLossRate,
+                })
+            })
+        }, 1000);
+
+        if ("addTrack" in pc) {
+            pc.ontrack = (media) => {
+                if (media.streams.length > 0 && media.streams[0].active) {
+                    this.audioView.srcObject = media.streams[0];
+                }
+            }
+        } else {
+            //onaddstream方法被规范不建议使用
+            pc.onaddstream = (media: {
+                stream: any;
+            }) => {
+                let remoteStream = media.stream;
+                if (remoteStream.active) {
+                    this.audioView.srcObject = remoteStream;
+                }
             }
         }
     }
@@ -295,6 +408,16 @@ export default class SipCall {
         this.direction = undefined
         this.otherLegNumber = ""
         this.currentCallId = ""
+
+
+        clearInterval(this.currentLatencyStatTimer)
+        this.currentLatencyStatTimer = undefined
+        this.currentStatReport = {
+            outboundPacketsSent: 0,
+            outboundLost: 0,
+            inboundLost: 0,
+            inboundPacketsSent: 0
+        }
     }
 
     private onChangeState(event: String, data: StateListenerMessage | null) {
@@ -343,24 +466,33 @@ export default class SipCall {
         this.ua.stop()
     }
 
+    public sendMessage = (target: string, content: string) => {
+        let options = {
+            'contentType': 'text/plain'
+        };
+        this.ua.sendMessage(target, content, options);
+    }
+
     //发起呼叫
     public call = (phone: string, param: CallExtraParam = {}): String => {
         //注册情况下发起呼叫
         this.currentCallId = uuidv4();
         if (this.ua && this.ua.isRegistered()) {
-            const extraHeaders:string[]=["X-JCallId: " + this.currentCallId];
-            if (param){
-                if (param.businessId){
+            const extraHeaders: string[] = ["X-JCallId: " + this.currentCallId];
+            if (param) {
+                if (param.businessId) {
                     extraHeaders.push("X-JBusinessId: " + param.businessId)
                 }
-                if (param.outNumber){
+                if (param.outNumber) {
                     extraHeaders.push("X-JOutNumber: " + param.outNumber)
                 }
             }
             this.outgoingSession = this.ua.call(phone, {
                 eventHandlers: {
                     //回铃音处理
-                    peerconnection: (e: { peerconnection: RTCPeerConnection; }) => {
+                    peerconnection: (e: {
+                        peerconnection: RTCPeerConnection;
+                    }) => {
                         this.handleAudio(e.peerconnection)
                     }
                 },
@@ -368,7 +500,7 @@ export default class SipCall {
                 extraHeaders: extraHeaders,
                 sessionTimersExpires: 120,
                 pcConfig: {
-                    iceTransportPolicy:  "all",
+                    iceTransportPolicy: "all",
                     iceServers: [this.ice]
                 }
             })

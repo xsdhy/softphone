@@ -2,7 +2,6 @@ name: publishNpm
 
 on:
   push:
-    branches: [ main ]
     tags:
       - "v*.*.*"
 
@@ -21,7 +20,6 @@ jobs:
         with:
           path: ./package.json
           property: version
-      - run: echo ${{steps.version.outputs.prop}}
       - run: yarn
       - run: yarn run build
       - name: Release
