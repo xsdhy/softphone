@@ -2,41 +2,40 @@
 本项目是基于JsSIP实现的webrtc软电话条、话务条。不依赖于其他业务系统，支持直接对接opensips、freeswitch。
 支持react、vue、jquery、原生js。
 
-## 使用说明
+## 接入指南
 
 ### 安装
 
 #### 使用 npm 或 yarn 安装#
 我们推荐使用 npm 或 yarn 的方式进行开发，不仅可在开发环境轻松调试，也可放心地在生产环境打包部署使用，享受整个生态圈和工具链带来的诸多好处。
-```
+```bash
 npm install sip-call --save
 yarn add sip-call
 ```
 #### 浏览器引入
 在浏览器中使用 script 和 link 标签直接引入文件，并使用全局变量 SipCall。
-我们在 npm 发布包内的 sip-js/lib 目录下提供了 bundle.browser.js
-```
+我们在 npm 发布包内的 sip-js/lib 目录下提供了[ bundle.browser.js](https://github.com/xsdhy/softphone/releases)
+
+```javascript
 <script src="lib/bundle.browser.js"></script>
 ```
+也可以点击这里进行下载：https://github.com/xsdhy/softphone/releases
 
 ### 快速上手
 
-
-```
+#### 初始化
+```javascript
+//设置回调函数，主要是会回调一些时间，比如说注册、来电之类的
 let stateEventListener = (event, data) => {
-switch(event){
+		switch(event){
     case "ERROR":
-    
     break
     case "CONNECTED":
-    
     break
-
-    
     default:
-    
     }
 }
+//设置配置信息
 let config = {
     host: '10.133.35.89',
     port: '5066',
@@ -46,8 +45,31 @@ let config = {
     autoRegister: true,
     stateEventListener: stateEventListener
 }
+//初始化
 this.sipClient = new SipCall(config)
 ```
+#### 呼叫
+```javascript
+this.sipClient.call("17300000001")
+```
+
+## 流程说明
+
+### 1、初始化
+1）、检查麦克风权限
+2）、调用初始化方法
+this.sipClient = new SipCall(config)，建议用户登录业务系统的时候就进行初始化，要求全局唯一，切记不能每次拨打电话的时候都初始化一次。
+3）、收到回调事件「REGISTERED」表示注册成功。错误处理：监听事件，收到「DISCONNECTED」、「REGISTER_FAILED」做出相应提示
+
+### 2、呼叫
+请注意只有当收到回调事件「REGISTERED」后，才能进行后续操作
+1）、检查麦克风权限
+2）、调用呼叫方法this.sipClient.call("17300000001")
+3）、收到「OUTGOING_CALL」事件，表示呼出中
+4）、如果被叫接听，则会收到「IN_CALL」事件
+5）、任意一方挂机，触发「CALL_END」事件
+
+
 
 ## 文档说明
 
@@ -57,14 +79,16 @@ this.sipClient = new SipCall(config)
 |-------|--------------------------|------------|
 | 初始化   | new SipCall(config)    |            |
 | 销毁SDK | cleanSDK()         |            |
+| 检查麦克风 | micCheck() | 异步接口，若麦克风异常会回调MIC_ERROR事件 |
 | 注册    | register()         |            |
 | 取消注册  | unregister()       |            |
-| 呼叫请求  | call(phone) | 真实外呼需要传的参数 |
+| 呼叫请求  | call(phone,extraParam={}) | phone为外呼号码，extraParam为可选的扩展参数（可以不传） |
 | 挂断电话  | hangup()           |            |
 | 应答接听  | answer()           |            |
 | 保持    | hold()             |            |
 | 取消保持  | unhold()           |            |
 | 转接通话  | transfer(phone)    |            |
+| 按键 | sendDtmf(tone) | 按键或二次拨号 |
 
 以下对几个特殊的方法进行说明：
 
@@ -83,6 +107,15 @@ this.sipClient = new SipCall(config)
 | autoRegister       | bool类型 true/false，initSDK调用后是否自动注册     | 不填默认为false |
 
 
+### 呼叫 call
+
+call方法完整的使用示例如下
+```
+let callUUID = this.sipClient.call("17300000001",{"businessId":"自定义参数(最多100个字符)"})
+```
+其中：
+入参，第一个参数为必填，第二个参数为可选的扩展参数
+出参，callUUID表示通话的唯一标识，与话单中的uuid一致
 
 
 ### 状态回调（stateEventListener）
@@ -104,4 +137,3 @@ stateEventListener回调参数为 event, data
 | IN_CALL                     | 无返回值                                                                                                                                     | 通话中           |
 | HOLD                        | 无返回值                                                                                                                                     | 保持中           |
 | CALL_END                    | 无返回值                                                                                                                                     | 通话结束          |
-

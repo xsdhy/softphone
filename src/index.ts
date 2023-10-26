@@ -208,25 +208,25 @@ export default class SipCall {
         })
         //取消注册
         this.ua.on('unregistered', (e) => {
-            console.log("unregistered:", e);
+            // console.log("unregistered:", e);
             this.ua.stop();
             this.onChangeState(State.UNREGISTERED, {localAgent: this.localAgent})
         })
         //注册失败
         this.ua.on('registrationFailed', (e) => {
-            console.error("registrationFailed", e)
+            // console.error("registrationFailed", e)
             this.onChangeState(State.REGISTER_FAILED, {msg: '注册失败:' + e.cause})
             this.ua.stop()
         })
         //Fired a few seconds before the registration expires
         this.ua.on('registrationExpiring', (e) => {
-            console.log("registrationExpiring")
+            // console.log("registrationExpiring")
             this.ua.register()
         })
 
         //电话事件监听
         this.ua.on('newRTCSession', (data: IncomingRTCSessionEvent | OutgoingRTCSessionEvent) => {
-            console.info('on new rtcsession: ', data)
+            // console.info('on new rtcsession: ', data)
             let s = data.session;
             let currentEvent: String
             if (data.originator === 'remote') {
@@ -242,8 +242,34 @@ export default class SipCall {
                 currentEvent = State.OUTGOING_CALL
             }
 
+            s.on('peerconnection', (evt: PeerConnectionEvent) => {
+                // console.info('onPeerconnection');
+                //处理通话中媒体流
+                this.handleAudio(evt.peerconnection)
+            });
+
+            s.on('connecting', () => {
+                // console.info('connecting')
+            });
+
+            //防止检测时间过长
+            let iceCandidateTimeout: NodeJS.Timeout;
+            s.on('icecandidate', (evt: IceCandidateEvent) => {
+                if (iceCandidateTimeout != null) {
+                    clearTimeout(iceCandidateTimeout);
+                }
+                if (evt.candidate.type === "srflx" || evt.candidate.type === "relay") {
+                    evt.ready();
+                }
+                iceCandidateTimeout = setTimeout(evt.ready, 1000);
+            })
+
+            s.on('sending', () => {
+                // console.info('sending')
+            });
+
             s.on('progress', (evt: IncomingEvent | OutgoingEvent) => {
-                //console.info('通话振铃-->通话振铃')
+                // console.info('通话振铃-->通话振铃')
                 //s.remote_identity.display_name
                 this.onChangeState(currentEvent, {
                     direction: this.direction,
@@ -253,18 +279,21 @@ export default class SipCall {
             });
 
             s.on('accepted', (evt: IncomingEvent | OutgoingEvent) => {
-                //console.info('通话中-->通话中')
+                // console.info('通话中-->通话中')
                 this.onChangeState(State.IN_CALL, null)
+            });
+            s.on('accepted', () => {
+                // console.info('accepted')
             });
 
             s.on('ended', (evt: EndEvent) => {
-                //console.info('通话结束-->通话结束')
+                // console.info('通话结束-->通话结束')
                 this.cleanCallingData()
                 this.onChangeState(State.CALL_END, null)
             });
 
             s.on('failed', (evt: EndEvent) => {
-                //console.info('通话失败-->通话失败')
+                // console.info('通话失败-->通话失败')
                 this.cleanCallingData()
                 this.onChangeState(State.CALL_END, null)
             })
@@ -279,36 +308,15 @@ export default class SipCall {
                 //console.info('通话恢复-->通话恢复')
                 this.onChangeState(State.IN_CALL, null)
             })
-
-            s.on('peerconnection', (evt: PeerConnectionEvent) => {
-                //console.info('onPeerconnection - ', data.peerconnection);
-                //处理通话中媒体流
-                this.handleAudio(evt.peerconnection)
-            });
-
-            //防止检测时间过长
-            let iceCandidateTimeout: NodeJS.Timeout;
-            s.on('icecandidate', (evt: IceCandidateEvent) => {
-                if (iceCandidateTimeout != null) {
-                    clearTimeout(iceCandidateTimeout);
-                }
-                if (evt.candidate.type === "srflx" || evt.candidate.type === "relay") {
-                    evt.ready();
-                }
-                iceCandidateTimeout = setTimeout(evt.ready, 1000);
-            })
         })
 
-
         this.ua.on('newMessage', (data: IncomingMessageEvent | OutgoingMessageEvent) => {
-            console.log("newMessage:", data)
-            console.log("newMessage-originator:", data.originator)
             let s = data.message;
             s.on('succeeded', (evt) => {
-                console.log("newMessage-succeeded:", data, evt)
+                // console.log("newMessage-succeeded:", data, evt)
             })
             s.on('failed', (evt) => {
-                console.log("newMessage-succeeded:", data)
+                // console.log("newMessage-succeeded:", data)
             })
         })
 
@@ -430,8 +438,7 @@ export default class SipCall {
     //check当前通话是否存在
     private checkCurrentCallIsActive(): boolean {
         if (!this.currentSession || !this.currentSession.isEstablished()) {
-            let msg = '当前通话不存在或已销毁，无法执行该操作。'
-            this.onChangeState(State.ERROR, {msg: msg})
+            this.onChangeState(State.ERROR, {msg: '当前通话不存在或已销毁，无法执行该操作。'})
             return false
         }
         return true
@@ -442,9 +449,7 @@ export default class SipCall {
         if (this.ua.isConnected()) {
             this.ua.register()
         } else {
-            let msg = 'websocket尚未连接，请先连接ws服务器.'
-            console.error(msg)
-            this.onChangeState(State.ERROR, {msg: msg})
+            this.onChangeState(State.ERROR, {msg: 'websocket尚未连接，请先连接ws服务器.'})
         }
     }
 
@@ -453,9 +458,7 @@ export default class SipCall {
         if (this.ua && this.ua.isConnected() && this.ua.isRegistered()) {
             this.ua.unregister({all: true});
         } else {
-            let msg = '尚未注册，操作禁止.'
-            console.error(msg)
-            this.onChangeState(State.ERROR, {msg: msg})
+            this.onChangeState(State.ERROR, {msg: '尚未注册，操作禁止.'})
         }
     }
 
@@ -475,6 +478,7 @@ export default class SipCall {
 
     //发起呼叫
     public call = (phone: string, param: CallExtraParam = {}): String => {
+        this.micCheck();
         //注册情况下发起呼叫
         this.currentCallId = uuidv4();
         if (this.ua && this.ua.isRegistered()) {
@@ -509,9 +513,7 @@ export default class SipCall {
             this.otherLegNumber = phone
             return this.currentCallId;
         } else {
-            let msg = '请在注册成功后再发起外呼请求.'
-            console.error(msg)
-            this.onChangeState(State.ERROR, {msg: msg})
+            this.onChangeState(State.ERROR, {msg: '请在注册成功后再发起外呼请求.'})
             return "";
         }
     }
@@ -527,8 +529,7 @@ export default class SipCall {
                 }
             })
         } else {
-            let msg = '非法操作，通话尚未建立或状态不正确，请勿操作.'
-            this.onChangeState(State.ERROR, {msg: msg})
+            this.onChangeState(State.ERROR, {msg: '非法操作，通话尚未建立或状态不正确，请勿操作.'})
         }
     }
 
@@ -537,9 +538,7 @@ export default class SipCall {
         if (this.currentSession && !this.currentSession.isEnded()) {
             this.currentSession.terminate();
         } else {
-            let msg = '当前通话不存在，无法执行挂断操作。'
-            console.log(msg)
-            this.onChangeState(State.ERROR, {msg: msg})
+            this.onChangeState(State.ERROR, {msg: '当前通话不存在，无法执行挂断操作。'})
         }
     }
 
@@ -595,6 +594,10 @@ export default class SipCall {
 
     //麦克风检测
     public micCheck() {
+        if (navigator.mediaDevices==undefined){
+            this.onChangeState(State.MIC_ERROR, {msg: "麦克风检测异常!请检查麦克风权限是否开启，是否在HTTPS站点"})
+            return
+        }
         navigator.mediaDevices.getUserMedia({
             video: false,
             audio: true
@@ -603,8 +606,7 @@ export default class SipCall {
                 track.stop()
             })
         }).catch(_ => {
-            console.error("麦克风检测异常！！请检查麦克风")
-            this.onChangeState(State.MIC_ERROR, {msg: "麦克风检测异常！！请检查麦克风"})
+            this.onChangeState(State.MIC_ERROR, {msg: "麦克风检测异常！请检查麦克风"})
         })
     }
 
@@ -652,6 +654,9 @@ export default class SipCall {
 
     //获取媒体设备
     public static async getMediaDeviceInfo() {
+        if (navigator.mediaDevices==null){
+            return [];
+        }
         let deviceInfos = await navigator.mediaDevices.enumerateDevices();
         let devices: [] = [];
         for (let {kind, label, deviceId, groupId} of deviceInfos) {

@@ -379,6 +379,7 @@
                         username: '',
                         password: '',
                     },
+                    checkMic:true,
                     autoRegister: false,
                     debug: false,
                     stateEventListener: this.stateEventListener
@@ -420,7 +421,7 @@
             }
         },
         created() {
-            console.log("v2.0.4");
+            console.log("v1.3.4");
 
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
@@ -506,6 +507,7 @@
             },
             //事件回调
             stateEventListener(event, data) {
+                console.log("收到事件:", event, data);
                 switch (event) {
                     case "REGISTERED":
                         this.statusIsLogin = true;
@@ -572,8 +574,10 @@
                     case "LATENCY_STAT":
                         this.latency_stat = data
                         break;
+                    case "MIC_ERROR":
+                        alert(data.msg);
+                        break;
                     default:
-                        console.log("收到事件-未处理", event, data);
                 }
             },
             //启动计时器
