@@ -57,6 +57,17 @@
                 </div>
 
                 <div v-if="statusIsCall" :class="{disabled:!statusIsCall}">
+                    <div v-if="disableMic" class="soft-function" :class="{hold:disableMic}" @click="mute">
+                        <iconpark-icon name="mute-jingyin"></iconpark-icon>
+                        <div class="text">启用</div>
+                    </div>
+                    <div v-else class="soft-function" :class="{unhold:!disableMic}" @click="mute">
+                        <iconpark-icon name="cancelMute-quxiaojingyin"></iconpark-icon>
+                        <div class="text">静音</div>
+                    </div>
+                </div>
+
+                <div v-if="statusIsCall" :class="{disabled:!statusIsCall}">
                     <div v-if="!statusIsHold" class="soft-function" :class="{hold:!statusIsHold}" @click="hold">
                         <iconpark-icon name="keepHold-baochi"></iconpark-icon>
                         <div class="text">{{$t('message.hold')}}</div>
@@ -154,6 +165,10 @@
                         <el-input type="password" v-model="configuration.extPwd" clearable show-password/>
                     </el-form-item>
 
+                    <el-form-item label="自动应答">
+                        <el-switch v-model="autoAnswer" active-color="#13ce66" inactive-color="#666666"></el-switch>
+                    </el-form-item>
+
                     <el-collapse>
                         <el-collapse-item :title="$t('message.advancedSetting')">
                             <el-form-item label="Language">
@@ -185,6 +200,9 @@
                             <el-form-item v-if="configuration.stun.type==='turn'" label="credential">
                                 <el-input type="password" v-model="configuration.stun.password" clearable
                                           show-password/>
+                            </el-form-item>
+                            <el-form-item label="自动禁音">
+                                <el-switch v-model="autoDisableMic" active-color="#13ce66" inactive-color="#666666"></el-switch>
                             </el-form-item>
                         </el-collapse-item>
                     </el-collapse>
@@ -379,7 +397,7 @@
                         username: '',
                         password: '',
                     },
-                    checkMic:true,
+                    checkMic: true,
                     autoRegister: false,
                     debug: false,
                     stateEventListener: this.stateEventListener
@@ -410,6 +428,9 @@
                 mediaDevices: null,
 
                 latency_stat: undefined,
+                autoAnswer: false,//自动接听
+                autoDisableMic:false,//自动静音
+                disableMic: false,//静音
 
                 loading: null,
                 sipClient: undefined,
@@ -505,6 +526,13 @@
                     this.callPhoneNumber = this.callPhoneNumber.substring(0, this.callPhoneNumber.length - 1)
                 }
             },
+            mute() {
+                if (this.disableMic) {
+                    this.sipClient.unmute();
+                } else {
+                    this.sipClient.mute();
+                }
+            },
             //事件回调
             stateEventListener(event, data) {
                 console.log("收到事件:", event, data);
@@ -518,6 +546,7 @@
                         this.statusIsHold = false;
                         this.statusIsring = false;
                         this.statusIsCall = false;
+                        this.disableMic = false;
                         this.latency_stat = undefined;
                         break;
                     case "INCOMING_CALL":
@@ -529,8 +558,16 @@
                         this.callDirection = data.direction;
                         this.discaller = data.otherLegNumber;
                         this.discallee = this.agentNo;
+                        if (this.autoAnswer) {
+                            //自动应答
+                            this.sipClient.answer();
+                        }
                         break;
                     case "IN_CALL":
+                        if (this.autoDisableMic){
+                            //自动禁音
+                            this.sipClient.mute();
+                        }
                         this.startTimerCall();
                         this.stopPlayRingMedia();
                         this.statusIsring = false;
@@ -543,6 +580,7 @@
                         this.statusIsring = false;
                         this.statusIsCall = false;
                         this.statusIsHold = false;
+                        this.disableMic = false;
                         this.latency_stat = undefined;
                         break;
                     case "HOLD":
@@ -552,10 +590,10 @@
                         this.statusIsHold = false;
                         break;
                     case "MUTE":
-                        this.status_is_mute = true;
+                        this.disableMic = true;
                         break;
                     case "UNMUTE":
-                        this.status_is_mute = false;
+                        this.disableMic = false;
                         break;
                     case "CONNECTED":
                         //已连接
@@ -875,6 +913,16 @@
     .number-op {
         width: 100%;
         height: 96%;
+    }
+
+    .number-op-2 {
+        width: 100%;
+        height: 46%;
+    }
+
+    .number-op-3 {
+        width: 45%;
+        height: 46%;
     }
 
     .config {

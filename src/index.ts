@@ -93,6 +93,8 @@ const enum State {
     IN_CALL = "IN_CALL",//通话中
     HOLD = "HOLD", //保持中
     CALL_END = "CALL_END", //通话结束
+    MUTE = "MUTE", //静音
+    UNMUTE = "UNMUTE", //取消静音
     LATENCY_STAT = "LATENCY_STAT", //网络延迟统计
 }
 
@@ -567,6 +569,7 @@ export default class SipCall {
             return
         }
         this.currentSession.mute();
+        this.onChangeState(State.MUTE, null)
     }
 
     //取消静音
@@ -575,6 +578,7 @@ export default class SipCall {
             return
         }
         this.currentSession.unmute();
+        this.onChangeState(State.UNMUTE, null)
     }
 
     //转接
