@@ -184,7 +184,7 @@ export default class SipCall {
             uri: 'sip:' + config.extNo + '@' + config.domain,
             password: config.extPwd,
             register: false,
-            register_expires: 60,
+            register_expires: 15,
             session_timers: false,
             // connection_recovery_max_interval:30,
             // connection_recovery_min_interval:4,
