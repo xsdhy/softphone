@@ -136,4 +136,14 @@ stateEventListener回调参数为 event, data
 | INCOMING_CALL/OUTGOING_CALL | {direction: 'inbound', otherLegNumber: '138xxxxxxxx', 'callId': 'xxxxxxx'} 说明：direction为呼叫方向：inbound呼入，outbound呼出；otherLegNumber：第三方呼叫记录 | 呼入振铃/外呼响铃     |
 | IN_CALL                     | 无返回值                                                                                                                                     | 通话中           |
 | HOLD                        | 无返回值                                                                                                                                     | 保持中           |
-| CALL_END                    | 无返回值                                                                                                                                     | 通话结束          |
+| CALL_END                    | CallEndEvent                                                                                                                                     | 通话结束          |
+
+
+#### CallEndEvent
+
+| 属性         | 必须 | 类型 | 说明                                |
+|------------|----|----|-----------------------------------|
+| answered   | 是  |  boolean  | 是否接通(以后端为准)                       |
+| originator | 是  |  string  | 发起方(挂断方):local本地(自己),remote远程(对方) |
+| cause      | 是  | string   | 挂断原因                              |
+| code       | 否  |  number  | 当originator=remote，且answered=false时存在 |

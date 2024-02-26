@@ -80,6 +80,13 @@ interface CallExtraParam {
     businessId?: String;
 }
 
+interface CallEndEvent {
+    originator: string;//local,remote
+    cause: string;
+    code: number;
+    answered: boolean;
+}
+
 const enum State {
     MIC_ERROR = "MIC_ERROR",//麦克风检测异常
     ERROR = "ERROR",//错误操作或非法操作
@@ -290,14 +297,24 @@ export default class SipCall {
 
             s.on('ended', (evt: EndEvent) => {
                 // console.info('通话结束-->通话结束')
+                let evtData:CallEndEvent={
+                    answered:true,
+                    cause: evt.cause,
+                    code: evt.message?.status_code??0,
+                    originator: evt.originator}
                 this.cleanCallingData()
-                this.onChangeState(State.CALL_END, null)
+                this.onChangeState(State.CALL_END, evtData)
             });
 
             s.on('failed', (evt: EndEvent) => {
                 // console.info('通话失败-->通话失败')
+                let evtData:CallEndEvent={
+                    answered:false,
+                    cause: evt.cause,
+                    code: evt.message?.status_code??0,
+                    originator: evt.originator}
                 this.cleanCallingData()
-                this.onChangeState(State.CALL_END, null)
+                this.onChangeState(State.CALL_END, evtData)
             })
 
             s.on('hold', (evt: HoldEvent) => {
@@ -430,7 +447,7 @@ export default class SipCall {
         }
     }
 
-    private onChangeState(event: String, data: StateListenerMessage | null) {
+    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent |null) {
         if (undefined === this.stateEventListener) {
             return
         }
