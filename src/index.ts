@@ -70,9 +70,11 @@ interface NetworkLatencyStat {
 
     inboundLost: number | undefined  //下行-丢包数量
     inboundPacketsSent: number | undefined //下行-包的总数
+    inboundAudioLevel: number | undefined //下行-声音大小
 
     outboundLost: number | undefined  //上行-丢包数量
     outboundPacketsSent: number | undefined //上行-包的总数
+    outboundAudioLevel: number | undefined //上行-声音大小
 }
 
 interface CallExtraParam {
@@ -85,6 +87,14 @@ interface CallEndEvent {
     cause: string;
     code: number;
     answered: boolean;
+}
+
+interface LatencyStat {
+    latencyTime: number,
+    upLossRate: number,
+    upAudioLevel: number,//上行-outbound-音量
+    downLossRate: number,
+    downAudioLevel: number,//下行-inbound-音量
 }
 
 const enum State {
@@ -359,7 +369,7 @@ export default class SipCall {
             pc.getStats().then((stats) => {
                 stats.forEach((report) => {
                     if (report.type=='media-source'){
-                        // console.log("音量:",report.audioLevel)
+                        this.currentStatReport.outboundAudioLevel=report.audioLevel
                     }
                     if (report.type != 'remote-inbound-rtp' && report.type != 'inbound-rtp' && report.type != 'remote-outbound-rtp' && report.type != 'outbound-rtp') {
                         return
@@ -375,36 +385,45 @@ export default class SipCall {
                             break;
                         case "inbound-rtp"://客户端收到的-下行
                             this.currentStatReport.inboundLost = report.packetsLost
+                            this.currentStatReport.inboundAudioLevel = report.audioLevel
                             break;
                         case "remote-outbound-rtp"://服务器发送的-对于客户端来说就是下行
                             this.currentStatReport.inboundPacketsSent = report.packetsSent
                             break
                     }
                 });
-                let inboundLossRate = 0//下行丢包率
-                let outboundLossRate = 0//上行丢包率
-                let roundTripTime = 0;//延迟
+                let ls:LatencyStat = {
+                    latencyTime: 0,
+                    upLossRate: 0,
+                    downLossRate: 0,
+                    downAudioLevel: 0,
+                    upAudioLevel: 0,
+                }
+
+                if (this.currentStatReport.inboundAudioLevel!=undefined){
+                    ls.downAudioLevel=this.currentStatReport.inboundAudioLevel
+                }
+                if (this.currentStatReport.outboundAudioLevel!=undefined){
+                    ls.upAudioLevel=this.currentStatReport.outboundAudioLevel
+                }
+
 
                 if (this.currentStatReport.inboundLost && this.currentStatReport.inboundPacketsSent) {
-                    inboundLossRate = this.currentStatReport.inboundLost / this.currentStatReport.inboundPacketsSent;
+                    ls.downLossRate = this.currentStatReport.inboundLost / this.currentStatReport.inboundPacketsSent;
                 }
                 if (this.currentStatReport.outboundLost && this.currentStatReport.outboundPacketsSent) {
-                    outboundLossRate = this.currentStatReport.outboundLost / this.currentStatReport.outboundPacketsSent;
+                    ls.upLossRate = this.currentStatReport.outboundLost / this.currentStatReport.outboundPacketsSent;
                 }
                 if (this.currentStatReport.roundTripTime != undefined) {
-                    roundTripTime = Math.floor(this.currentStatReport.roundTripTime * 1000)
+                    ls.latencyTime = Math.floor(this.currentStatReport.roundTripTime * 1000)
                 }
                 console.debug(
                     '上行/下行(丢包率):' +
-                    (outboundLossRate * 100).toFixed(2) + "% / " +
-                    (inboundLossRate * 100).toFixed(2) + "%",
-                    "延迟:" + roundTripTime.toFixed(2) + "ms"
+                    ( ls.upLossRate * 100).toFixed(2) + "% / " +
+                    (ls.downLossRate * 100).toFixed(2) + "%",
+                    "延迟:" + ls.latencyTime.toFixed(2) + "ms"
                 );
-                this.onChangeState(State.LATENCY_STAT, {
-                    latencyTime: roundTripTime,
-                    upLossRate: outboundLossRate,
-                    downLossRate: inboundLossRate,
-                })
+                this.onChangeState(State.LATENCY_STAT, ls)
             })
         }, 1000);
 
@@ -447,7 +466,7 @@ export default class SipCall {
         }
     }
 
-    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent |null) {
+    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat |null) {
         if (undefined === this.stateEventListener) {
             return
         }

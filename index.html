@@ -96,10 +96,44 @@
 
     <el-card v-show="statusIsLogin" class="config">
         <div v-if="latency_stat!=undefined">
-            延迟:{{latency_stat.latencyTime}}ms. 丢包: {{(latency_stat.upLossRate * 100).toFixed(2)}}% /
-            {{(latency_stat.downLossRate * 100).toFixed(2)}}%
+            <el-row :gutter="20">
+                延迟:{{latency_stat.latencyTime}}ms. 丢包:<i class="el-icon-top" style="color: green"></i>{{(latency_stat.upLossRate * 100).toFixed(2)}}% / <i class="el-icon-bottom" style="color: red"></i>{{(latency_stat.downLossRate * 100).toFixed(2)}}%
+            </el-row>
+
+            <el-row>
+                <el-col :span="1">
+                <i class="el-icon-mic"></i>
+                </el-col>
+                <el-col :span="23">
+                <el-progress :stroke-width="24"
+                             :percentage="latency_stat.upAudioLevel*100"
+                             color="green"
+                             :show-text="false"></el-progress>
+                </el-col>
+            </el-row>
+
+            <el-row style="padding-top: 2px">
+                <el-col :span="1">
+                <iconpark-icon name="cancelMute-quxiaojingyin"></iconpark-icon>
+                </el-col>
+                <el-col :span="23">
+                <el-progress
+                        :stroke-width="24"
+                        :percentage="latency_stat.downAudioLevel*100"
+                        color="red"
+                        :show-text="false"></el-progress>
+                </el-col>
+            </el-row>
         </div>
-        <div>
+        <div v-if="callEndInfo!== undefined">
+            <span v-if="callEndInfo.answered"><el-tag type="success">已接通</el-tag></span>
+            <span v-if="!callEndInfo.answered"><el-tag type="danger">未接通</el-tag></span>
+            <span v-if="callEndInfo.originator==='remote'"><el-tag type="warning">对方挂断</el-tag></span>
+            <span v-if="callEndInfo.originator==='local'"><el-tag type="success">主动挂断</el-tag></span>
+            <span v-if="!callEndInfo.answered"><strong>挂机原因:</strong>{{callEndInfo.code}} {{callEndInfo.cause}}</span>
+            <br/>
+        </div>
+        <div style="padding-top: 5px">
             <el-input v-model="callPhoneNumber" :placeholder="$t('message.pleaseEnterTheOutboundNumber')"></el-input>
         </div>
         <div style="margin-top: 5px">
@@ -439,6 +473,8 @@
                     {"label": "简体中文", "value": "zh"},
                     {"label": "English", "value": "en"}
                 ],
+
+                callEndInfo:undefined,
             }
         },
         created() {
@@ -462,6 +498,7 @@
             });
         },
         methods: {
+
             login() {
                 if (this.configuration.host.length <= 3 || this.configuration.extNo.length <= 3 || this.configuration.extPwd.length <= 3) {
                     this.$message({
@@ -492,6 +529,7 @@
             },
             makeCall() {
                 console.log("点击拨打按钮")
+                this.callEndInfo=undefined
                 if (this.callPhoneNumber.length <= 2) {
                     this.$message({
                         message: this.$t('message.theCalledWasNotEntered'),
@@ -548,11 +586,14 @@
                         this.statusIsCall = false;
                         this.disableMic = false;
                         this.latency_stat = undefined;
+                        this.callEndInfo=undefined;
                         break;
                     case "INCOMING_CALL":
+                        this.callEndInfo=undefined
                         this.playRingMedia()
                     case "OUTGOING_CALL":
                         console.log("来电", data.direction)
+                        this.callEndInfo=undefined
                         this.startTimerCall();
                         this.statusIsring = true;
                         this.callDirection = data.direction;
@@ -582,6 +623,7 @@
                         this.statusIsHold = false;
                         this.disableMic = false;
                         this.latency_stat = undefined;
+                        this.callEndInfo=data
                         break;
                     case "HOLD":
                         this.statusIsHold = true;
