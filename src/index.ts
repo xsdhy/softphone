@@ -219,7 +219,9 @@ export default class SipCall {
         //websocket连接失败
         this.ua.on('disconnected', (e) => {
             this.ua.stop()
-            this.onChangeState(State.DISCONNECTED, null)
+            if(e.error){
+                this.onChangeState(State.DISCONNECTED, e.reason)
+            }
         })
         //注册成功
         this.ua.on('registered', (e) => {

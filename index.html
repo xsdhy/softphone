@@ -526,6 +526,16 @@
         messages, // 设置地区信息
     })
 
+    const storage = {
+        get(key) {
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        },
+        set(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+    };
+
+
     new Vue({
         el: '#app',
         i18n,
@@ -541,7 +551,7 @@
                     extPwd: '',
                     stun: {
                         type: "stun",
-                        host: "stun.xsdhy.com:3478",
+                        host: "",
                         username: '',
                         password: '',
                     },
@@ -593,10 +603,8 @@
             }
         },
         created() {
-            console.log("v1.3.4.1");
-            var lang = navigator.language||navigator.userLanguage;//常规浏览器语言和IE浏览器
-            console.log(lang)
-            lang = lang.substr(0, 2);//截取lang前2位字符
+            console.log("v1.3.5.1");
+
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
 
@@ -699,6 +707,13 @@
             stateEventListener(event, data) {
                 console.log("收到事件:", event, data);
                 switch (event) {
+                    case "DISCONNECTED":
+                        this.loading.close();
+                        this.$message({
+                            message: "DISCONNECTED",
+                            type: 'warning'
+                        });
+                        break;
                     case "REGISTERED":
                         this.statusIsLogin = true;
                         this.agentNo = data.localAgent;
@@ -857,91 +872,54 @@
                     document.body.removeChild(ringAudio);
                 }
             },
+
             accountGetAll() {
-                let historyAccounts = localStorage.getItem("historyAccounts")
-                if (null != historyAccounts) {
-                    return JSON.parse(historyAccounts)
-                }
-                return []
+                this.historyAccounts=storage.get("historyAccounts");
+                return this.historyAccounts;
             },
             accountGet(accountKey) {
-                let accounts = this.accountGetAll();
-                if (null == accounts) {
-                    return null;
-                }
-                for (let index = 0; index < accounts.length; index++) {
-                    let id = accounts[index].host + accounts[index].extNo;
-                    if (accountKey === id) {
-                        return accounts[index];
-                    }
-                }
-                return null;
+                return this.accountGetAll().find(account => account.host + account.extNo === accountKey) || null;
             },
             accountDel(accountKey) {
-                let accounts = this.accountGetAll();
-                if (null == accounts) {
-                    return;
-                }
-                for (let index = 0; index < accounts.length; index++) {
-                    let id = accounts[index].host + accounts[index].extNo;
-                    if (accountKey === id) {
-                        accounts.splice(index, 1);
-                        localStorage.setItem("historyAccounts", JSON.stringify(accounts))
-                        return;
-                    }
-                }
-                this.historyAccounts = this.accountGetAll()
+                const accounts = this.accountGetAll().filter(account => account.host + account.extNo !== accountKey);
+                storage.set("historyAccounts", accounts);
+                this.accountGetAll();
             },
             accountAdd(account) {
-                let accountKey = account.host + account.extNo
-                if (null != this.accountGet(accountKey)) {
-                    this.accountEdit(accountKey)
-                    return
+                const accountKey = account.host + account.extNo;
+                if (this.accountGet(accountKey)) {
+                    this.accountEdit(accountKey, account);
+                    return;
                 }
-                var accounts = this.accountGetAll();
-                accounts.push(account)
-                localStorage.setItem("historyAccounts", JSON.stringify(accounts))
-                this.historyAccounts = this.accountGetAll()
+                const accounts = this.accountGetAll();
+                accounts.push(account);
+                storage.set("historyAccounts", accounts);
+                this.accountGetAll();
             },
             accountEdit(accountKey, account) {
-                this.accountDel(accountKey)
-                this.accountAdd(account)
+                this.accountDel(accountKey);
+                this.accountAdd(account);
+                this.accountGetAll();
             },
-            //使用历史账号
             useHistoryAccounts(accountKey) {
-                let item = this.accountGet(accountKey)
-                this.configuration.host = item.host;
-                this.configuration.port = item.port;
-                this.configuration.proto = item.proto;
-                this.configuration.domain = item.domain;
-                this.configuration.extNo = item.extNo;
-                this.configuration.extPwd = item.extPwd;
-                if (item.stun) {
-                    this.configuration.stun = item.stun;
-                }
+                const item = this.accountGet(accountKey);
+                if (!item) return;
+                Object.assign(this.configuration, item);
             },
-            //初始化历史账号，每次页面重新打开的时候执行
             initHistoryAccounts() {
-                let accounts = this.accountGetAll()
-                if (accounts && accounts.length > 0) {
-                    this.historyAccounts = accounts
-                } else {
-                    return
-                }
-                //查看最后一次使用的账号是什么，若有则使用
-                let lastAccount = localStorage.getItem("lastAccount")
-                if (null != this.accountGet(lastAccount)) {
-                    this.useHistoryAccounts(lastAccount)
-                } else {
-                    this.useHistoryAccounts(this.historyAccounts[0].host + this.historyAccounts[0].extNo)
-                }
+                const accounts = this.accountGetAll();
+                if (!accounts.length) return;
+
+                this.historyAccounts = accounts;
+                const lastAccount = localStorage.getItem("lastAccount");
+                this.useHistoryAccounts(lastAccount || (accounts[0].host + accounts[0].extNo));
             },
-            //保存账号:登录成功的时候执行
             saveHistoryAccounts() {
-                var accountKey = this.configuration.host + this.configuration.extNo;
-                this.accountEdit(accountKey, this.configuration)
-                localStorage.setItem("lastAccount", accountKey)
+                const accountKey = this.configuration.host + this.configuration.extNo;
+                this.accountEdit(accountKey, this.configuration);
+                localStorage.setItem("lastAccount", accountKey);
             },
+
             useShareAccount() {
                 var queryVariable = this.getQueryVariable("u");
                 if (queryVariable) {
