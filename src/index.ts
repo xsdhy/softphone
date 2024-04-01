@@ -129,7 +129,6 @@ export default class SipCall {
 
     private ua: jssip.UA
     private socket: jssip.WebSocketInterface
-    private ice: RTCIceServer = {urls: ""}
 
 
     //当前坐席号码
@@ -153,6 +152,8 @@ export default class SipCall {
     //回调函数
     private stateEventListener: Function | undefined;
 
+    private stunConfig: StunConfig | undefined;
+
 
     //构造函数-初始化SDK
     constructor(config: InitConfig) {
@@ -162,17 +163,7 @@ export default class SipCall {
         if (undefined === config.domain || config.domain.length <= 0) {
             config.domain = config.host;
         }
-
-        if (config.stun && config.stun.type && config.stun.host) {
-            this.ice.urls = [config.stun.type + ':' + config.stun.host]
-            if ("turn" === config.stun.type) {
-                this.ice.username = config.stun.username
-                this.ice.credential = config.stun.password
-                this.ice.credentialType = "password"
-            }
-        } else {
-            this.ice.urls = []
-        }
+        this.stunConfig = config.stun
 
         //注入状态回调函数
         if (config.stateEventListener !== null) {
@@ -219,7 +210,7 @@ export default class SipCall {
         //websocket连接失败
         this.ua.on('disconnected', (e) => {
             this.ua.stop()
-            if(e.error){
+            if (e.error) {
                 this.onChangeState(State.DISCONNECTED, e.reason)
             }
         })
@@ -309,22 +300,24 @@ export default class SipCall {
 
             s.on('ended', (evt: EndEvent) => {
                 // console.info('通话结束-->通话结束')
-                let evtData:CallEndEvent={
-                    answered:true,
+                let evtData: CallEndEvent = {
+                    answered: true,
                     cause: evt.cause,
-                    code: evt.message?.status_code??0,
-                    originator: evt.originator}
+                    code: evt.message?.status_code ?? 0,
+                    originator: evt.originator
+                }
                 this.cleanCallingData()
                 this.onChangeState(State.CALL_END, evtData)
             });
 
             s.on('failed', (evt: EndEvent) => {
                 // console.info('通话失败-->通话失败')
-                let evtData:CallEndEvent={
-                    answered:false,
+                let evtData: CallEndEvent = {
+                    answered: false,
                     cause: evt.cause,
-                    code: evt.message?.status_code??0,
-                    originator: evt.originator}
+                    code: evt.message?.status_code ?? 0,
+                    originator: evt.originator
+                }
                 this.cleanCallingData()
                 this.onChangeState(State.CALL_END, evtData)
             })
@@ -370,8 +363,8 @@ export default class SipCall {
         this.currentLatencyStatTimer = setInterval(() => {
             pc.getStats().then((stats) => {
                 stats.forEach((report) => {
-                    if (report.type=='media-source'){
-                        this.currentStatReport.outboundAudioLevel=report.audioLevel
+                    if (report.type == 'media-source') {
+                        this.currentStatReport.outboundAudioLevel = report.audioLevel
                     }
                     if (report.type != 'remote-inbound-rtp' && report.type != 'inbound-rtp' && report.type != 'remote-outbound-rtp' && report.type != 'outbound-rtp') {
                         return
@@ -394,7 +387,7 @@ export default class SipCall {
                             break
                     }
                 });
-                let ls:LatencyStat = {
+                let ls: LatencyStat = {
                     latencyTime: 0,
                     upLossRate: 0,
                     downLossRate: 0,
@@ -402,11 +395,11 @@ export default class SipCall {
                     upAudioLevel: 0,
                 }
 
-                if (this.currentStatReport.inboundAudioLevel!=undefined){
-                    ls.downAudioLevel=this.currentStatReport.inboundAudioLevel
+                if (this.currentStatReport.inboundAudioLevel != undefined) {
+                    ls.downAudioLevel = this.currentStatReport.inboundAudioLevel
                 }
-                if (this.currentStatReport.outboundAudioLevel!=undefined){
-                    ls.upAudioLevel=this.currentStatReport.outboundAudioLevel
+                if (this.currentStatReport.outboundAudioLevel != undefined) {
+                    ls.upAudioLevel = this.currentStatReport.outboundAudioLevel
                 }
 
 
@@ -421,7 +414,7 @@ export default class SipCall {
                 }
                 console.debug(
                     '上行/下行(丢包率):' +
-                    ( ls.upLossRate * 100).toFixed(2) + "% / " +
+                    (ls.upLossRate * 100).toFixed(2) + "% / " +
                     (ls.downLossRate * 100).toFixed(2) + "%",
                     "延迟:" + ls.latencyTime.toFixed(2) + "ms"
                 );
@@ -468,7 +461,7 @@ export default class SipCall {
         }
     }
 
-    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat |null) {
+    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat | null) {
         if (undefined === this.stateEventListener) {
             return
         }
@@ -516,6 +509,31 @@ export default class SipCall {
         this.ua.sendMessage(target, content, options);
     }
 
+    public getCallOptionPcConfig(): RTCConfiguration | undefined {
+        if (this.stunConfig && this.stunConfig.type && this.stunConfig.host) {
+            if ("turn" === this.stunConfig.type) {
+                return {
+                    iceTransportPolicy: "all",
+                    iceServers: [{
+                        username: this.stunConfig.username,
+                        credentialType: "password",
+                        credential: this.stunConfig.password,
+                        urls: [this.stunConfig.type + ':' + this.stunConfig.host],
+                    }]
+                }
+            } else {
+                return {
+                    iceTransportPolicy: "all",
+                    iceServers: [{
+                        urls: [this.stunConfig.type + ':' + this.stunConfig.host],
+                    }]
+                }
+            }
+        } else {
+            return undefined
+        }
+    }
+
     //发起呼叫
     public call = (phone: string, param: CallExtraParam = {}): String => {
         this.micCheck();
@@ -543,10 +561,7 @@ export default class SipCall {
                 mediaConstraints: this.constraints,
                 extraHeaders: extraHeaders,
                 sessionTimersExpires: 120,
-                pcConfig: {
-                    iceTransportPolicy: "all",
-                    iceServers: [this.ice]
-                }
+                pcConfig: this.getCallOptionPcConfig()
             })
             //设置当前通话的session
             this.currentSession = this.outgoingSession
@@ -563,10 +578,7 @@ export default class SipCall {
         if (this.currentSession && this.currentSession.isInProgress()) {
             this.currentSession.answer({
                 mediaConstraints: this.constraints,
-                pcConfig: {
-                    iceTransportPolicy: "all",
-                    iceServers: [this.ice]
-                }
+                pcConfig: this.getCallOptionPcConfig()
             })
         } else {
             this.onChangeState(State.ERROR, {msg: '非法操作，通话尚未建立或状态不正确，请勿操作.'})
@@ -636,7 +648,7 @@ export default class SipCall {
 
     //麦克风检测
     public micCheck() {
-        navigator.permissions.query({ name: "microphone" }).then( (result)=> {
+        navigator.permissions.query({name: "microphone"}).then((result) => {
             if (result.state == "denied") {
                 this.onChangeState(State.MIC_ERROR, {msg: "麦克风权限被禁用,请设置允许使用麦克风"});
                 return;
@@ -644,7 +656,7 @@ export default class SipCall {
                 this.onChangeState(State.MIC_ERROR, {msg: "麦克风权限未开启,请设置允许使用麦克风权限后重试"});
             }
             //经过了上面的检测，这一步应该不需要了
-            if (navigator.mediaDevices==undefined){
+            if (navigator.mediaDevices == undefined) {
                 this.onChangeState(State.MIC_ERROR, {msg: "麦克风检测异常,请检查麦克风权限是否开启,是否在HTTPS站点"})
                 return
             }
@@ -705,7 +717,7 @@ export default class SipCall {
 
     //获取媒体设备
     public static async getMediaDeviceInfo() {
-        if (navigator.mediaDevices==null){
+        if (navigator.mediaDevices == null) {
             return [];
         }
         let deviceInfos = await navigator.mediaDevices.enumerateDevices();
