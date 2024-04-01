@@ -171,7 +171,7 @@ export default class SipCall {
                 this.ice.credentialType = "password"
             }
         } else {
-            this.ice.urls = ['stun:stun.xsdhy.com:3478']
+            this.ice.urls = []
         }
 
         //注入状态回调函数

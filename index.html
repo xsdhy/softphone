@@ -59,11 +59,11 @@
                 <div v-if="statusIsCall" :class="{disabled:!statusIsCall}">
                     <div v-if="disableMic" class="soft-function" :class="{hold:disableMic}" @click="mute">
                         <iconpark-icon name="mute-jingyin"></iconpark-icon>
-                        <div class="text">启用</div>
+                        <div class="text">{{$t('message.enable')}}</div>
                     </div>
                     <div v-else class="soft-function" :class="{unhold:!disableMic}" @click="mute">
                         <iconpark-icon name="cancelMute-quxiaojingyin"></iconpark-icon>
-                        <div class="text">静音</div>
+                        <div class="text">{{$t('message.mute')}}</div>
                     </div>
                 </div>
 
@@ -97,7 +97,7 @@
     <el-card v-show="statusIsLogin" class="config">
         <div v-if="latency_stat!=undefined">
             <el-row :gutter="20">
-                延迟:{{latency_stat.latencyTime}}ms. 丢包:<i class="el-icon-top" style="color: green"></i>{{(latency_stat.upLossRate * 100).toFixed(2)}}% / <i class="el-icon-bottom" style="color: red"></i>{{(latency_stat.downLossRate * 100).toFixed(2)}}%
+                {{$t('message.delay')}}:{{latency_stat.latencyTime}}ms. {{$t('message.packetLoss')}}:<i class="el-icon-top" style="color: green"></i>{{(latency_stat.upLossRate * 100).toFixed(2)}}% / <i class="el-icon-bottom" style="color: red"></i>{{(latency_stat.downLossRate * 100).toFixed(2)}}%
             </el-row>
 
             <el-row>
@@ -126,11 +126,11 @@
             </el-row>
         </div>
         <div v-if="callEndInfo!== undefined">
-            <span v-if="callEndInfo.answered"><el-tag type="success">已接通</el-tag></span>
-            <span v-if="!callEndInfo.answered"><el-tag type="danger">未接通</el-tag></span>
-            <span v-if="callEndInfo.originator==='remote'"><el-tag type="warning">对方挂断</el-tag></span>
-            <span v-if="callEndInfo.originator==='local'"><el-tag type="success">主动挂断</el-tag></span>
-            <span v-if="!callEndInfo.answered"><strong>挂机原因:</strong>{{callEndInfo.code}} {{callEndInfo.cause}}</span>
+            <span v-if="callEndInfo.answered"><el-tag type="success">{{$t('message.connected')}}</el-tag></span>
+            <span v-if="!callEndInfo.answered"><el-tag type="danger">{{$t('message.notConnected')}}</el-tag></span>
+            <span v-if="callEndInfo.originator==='remote'"><el-tag type="warning">{{$t('message.partyHungUp')}}</el-tag></span>
+            <span v-if="callEndInfo.originator==='local'"><el-tag type="success">{{$t('message.selfInitiatedHangUp')}}</el-tag></span>
+            <span v-if="!callEndInfo.answered"><strong>{{$t('message.hangUpReason')}}:</strong>{{callEndInfo.code}} {{callEndInfo.cause}}</span>
             <br/>
         </div>
         <div style="padding-top: 5px">
@@ -199,7 +199,7 @@
                         <el-input type="password" v-model="configuration.extPwd" clearable show-password/>
                     </el-form-item>
 
-                    <el-form-item label="自动应答">
+                    <el-form-item :label="$t('message.autoAnswer')">
                         <el-switch v-model="autoAnswer" active-color="#13ce66" inactive-color="#666666"></el-switch>
                     </el-form-item>
 
@@ -235,7 +235,7 @@
                                 <el-input type="password" v-model="configuration.stun.password" clearable
                                           show-password/>
                             </el-form-item>
-                            <el-form-item label="自动禁音">
+                            <el-form-item :label="$t('message.autoMute')">
                                 <el-switch v-model="autoDisableMic" active-color="#13ce66" inactive-color="#666666"></el-switch>
                             </el-form-item>
                         </el-collapse-item>
@@ -368,6 +368,17 @@
                 pleaseEnterTheOutboundNumber: '请输入外呼号码',
                 noAccountInformationWasEntered: '请先在参数配置中输入账号信息',
                 theCalledWasNotEntered: '请输入要拨打的号码',
+                connected: '已接通',
+                notConnected: '未接通',
+                partyHungUp: '对方挂断',
+                selfInitiatedHangUp: '主动挂断',
+                hangUpReason: '挂机原因',
+                delay: '延迟',
+                packetLoss: '丢包',
+                enable: '启用',
+                mute: '静音',
+                autoAnswer: '自动应答',
+                autoMute: '自动静音',
             }
         },
         en: {
@@ -403,6 +414,109 @@
                 pleaseEnterTheOutboundNumber: 'Please Enter The Outbound Number',
                 noAccountInformationWasEntered: 'Enter the account information in the parameter configuration first',
                 theCalledWasNotEntered: 'Please enter the number you want to dial',
+                connected: 'Connected',
+                notConnected: 'Not Connected',
+                partyHungUp: 'Other Party Hung Up',
+                selfInitiatedHangUp: 'Self-Initiated Hang Up',
+                hangUpReason: 'Hang Up Reason',
+                delay: 'Delay',
+                packetLoss: 'Packet Loss',
+                enable: 'Enable',
+                mute: 'Mute',
+                autoAnswer: 'Auto Answer',
+                autoMute: 'Auto Mute',
+            }
+        },
+        pt: {
+            message: {
+                login: 'Entrar',
+                answer: 'Atender',
+                hangUp: 'Desligar',
+                hold: 'Aguardar',
+                retrieve: 'Recuperar',
+                transfer: 'Transferir',
+                landing: 'Conectando',
+                logout: 'Sair',
+                online: 'Online',
+                number: 'Número',
+                duration: 'Duração',
+                NotLoggedIn: 'Não Registrado',
+                ParameterSetting: 'Configuração de Parâmetros',
+                serverAddress: 'Endereço do Servidor',
+                serverPort: 'Porta do Servidor',
+                extensionNumber: 'Número de Extensão',
+                password: 'Senha',
+                share: 'Compartilhar',
+                advancedSetting: 'Configurações Avançadas',
+                historicalAccountNumber: 'Número da Conta Histórica',
+                use: 'Usar',
+                delete: 'Deletar',
+                DebuggingInformation: 'Informações de Depuração',
+                equipmentList: 'Lista de Equipamentos',
+                microphoneTest: 'Teste de Microfone',
+                startTesting: 'Iniciar Teste',
+                endTesting: 'Finalizar Teste',
+                headphoneTest: 'Teste de Fone de Ouvido',
+                pleaseEnterTheOutboundNumber: 'Por favor, insira o número de saída',
+                noAccountInformationWasEntered: 'Insira as informações da conta na configuração de parâmetros primeiro',
+                theCalledWasNotEntered: 'Por favor, insira o número a ser discado',
+                connected: 'Conectado',
+                notConnected: 'Não Conectado',
+                partyHungUp: 'A outra parte desligou',
+                selfInitiatedHangUp: 'Desligamento iniciado por si',
+                hangUpReason: 'Motivo do desligamento',
+                delay: 'Atraso',
+                packetLoss: 'Perda de pacote',
+                enable: 'Ativar',
+                mute: 'Mudo',
+                autoAnswer: 'Atendimento Automático',
+                autoMute: 'Mudo Automático',
+            }
+        },
+        es: {
+            message: {
+                login: 'Iniciar sesión',
+                answer: 'Responder',
+                hangUp: 'Colgar',
+                hold: 'Esperar',
+                retrieve: 'Recuperar',
+                transfer: 'Transferir',
+                landing: 'Conectando',
+                logout: 'Cerrar sesión',
+                online: 'En línea',
+                number: 'Número',
+                duration: 'Duración',
+                NotLoggedIn: 'No Registrado',
+                ParameterSetting: 'Configuración de Parámetros',
+                serverAddress: 'Dirección del Servidor',
+                serverPort: 'Puerto del Servidor',
+                extensionNumber: 'Número de Extensión',
+                password: 'Contraseña',
+                share: 'Compartir',
+                advancedSetting: 'Configuración Avanzada',
+                historicalAccountNumber: 'Número de Cuenta Histórica',
+                use: 'Usar',
+                delete: 'Eliminar',
+                DebuggingInformation: 'Información de Depuración',
+                equipmentList: 'Lista de Equipos',
+                microphoneTest: 'Prueba de Micrófono',
+                startTesting: 'Iniciar Prueba',
+                endTesting: 'Finalizar Prueba',
+                headphoneTest: 'Prueba de Auriculares',
+                pleaseEnterTheOutboundNumber: 'Por favor, ingrese el número de salida',
+                noAccountInformationWasEntered: 'Ingrese primero la información de la cuenta en la configuración de parámetros',
+                theCalledWasNotEntered: 'Por favor, ingrese el número a llamar',
+                connected: 'Conectado',
+                notConnected: 'No Conectado',
+                partyHungUp: 'La otra parte colgó',
+                selfInitiatedHangUp: 'Colgado por iniciativa propia',
+                hangUpReason: 'Razón de colgar',
+                delay: 'Retraso',
+                packetLoss: 'Pérdida de paquete',
+                enable: 'Habilitar',
+                mute: 'Silenciar',
+                autoAnswer: 'Respuesta Automática',
+                autoMute: 'Silencio Automático',
             }
         },
     }
@@ -471,15 +585,18 @@
                 locale: 'zh',
                 locales: [
                     {"label": "简体中文", "value": "zh"},
-                    {"label": "English", "value": "en"}
+                    {"label": "English", "value": "en"},
+                    {"label": "Spanish", "value": "es"},
+                    {"label": "Portuguese", "value": "pt"},
                 ],
-
                 callEndInfo:undefined,
             }
         },
         created() {
             console.log("v1.3.4.1");
-
+            var lang = navigator.language||navigator.userLanguage;//常规浏览器语言和IE浏览器
+            console.log(lang)
+            lang = lang.substr(0, 2);//截取lang前2位字符
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
 
@@ -488,8 +605,16 @@
                 this.locale = localStorage.getItem("locale")
             }
             if (!this.locale) {
+                for (let i = 0; i < this.locales.length; i++) {
+                    if (navigator.language===this.locales[i].value){
+                        this.locale=navigator.language
+                    }
+                }
+            }
+            if (!this.locale) {
                 this.locale = "zh"
             }
+
             localStorage.setItem("locale", this.locale)
             i18n.locale = this.locale
 
@@ -498,7 +623,6 @@
             });
         },
         methods: {
-
             login() {
                 if (this.configuration.host.length <= 3 || this.configuration.extNo.length <= 3 || this.configuration.extPwd.length <= 3) {
                     this.$message({

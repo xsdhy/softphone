@@ -48,7 +48,7 @@ export default {
     nodePolyfills(),
     serve({
       open: false,
-      host: '0.0.0.0',
+      host: '127.0.0.1',
       port: 9000,
       contentBase: ''
     })
