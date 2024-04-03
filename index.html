@@ -602,10 +602,12 @@
                     {"label": "Portuguese", "value": "pt"},
                 ],
                 callEndInfo: undefined,
+
             }
         },
         created() {
             console.log("v1.3.5.1");
+
 
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
@@ -629,7 +631,6 @@
             i18n.locale = this.locale
 
             SipCall.getMediaDeviceInfo().then((res) => {
-                console.log(res)
                 this.mediaDevices = res;
             });
         },
@@ -734,7 +735,6 @@
                         this.callEndInfo = undefined
                         this.playRingMedia()
                     case "OUTGOING_CALL":
-                        console.log("来电", data.direction)
                         this.callEndInfo = undefined
                         this.startTimerCall();
                         this.statusIsring = true;
@@ -840,8 +840,7 @@
             },
             //播放挂机铃声
             playHangupMedia() {
-                const _this = this;
-                var hangupAudio = document.getElementById("hangupMediaAudioId")
+                let hangupAudio = document.getElementById("hangupMediaAudioId")
                 if (!hangupAudio) {
                     hangupAudio = document.createElement('audio');
                     hangupAudio.id = 'hangupMediaAudioId';
@@ -853,10 +852,11 @@
             },
             //播放来电振铃
             playRingMedia() {
-                const _this = this;
-                _this.stopPlayRingMedia();
-
-                var ringAudio = document.getElementById("ringMediaAudioId")
+                if (window.electronAPI){
+                    window.electronAPI.createNotification("来电提醒","您有一通电话正在呼入")
+                }
+                this.stopPlayRingMedia();
+                let ringAudio = document.getElementById("ringMediaAudioId")
                 if (!ringAudio) {
                     ringAudio = document.createElement('audio');
                     ringAudio.id = 'ringMediaAudioId';
@@ -869,8 +869,7 @@
             },
             //停止播放来电振铃
             stopPlayRingMedia() {
-                const _this = this;
-                var ringAudio = document.getElementById("ringMediaAudioId");
+                let ringAudio = document.getElementById("ringMediaAudioId");
                 if (ringAudio) {
                     document.body.removeChild(ringAudio);
                 }
@@ -923,19 +922,11 @@
                 localStorage.setItem("lastAccount", accountKey);
             },
 
-            useShareAccount() {
-                var queryVariable = this.getQueryVariable("u");
-                if (queryVariable) {
-                    console.log("====>", JSON.parse(window.atob(this.getQueryVariable("u"))))
-                }
-            },
-
             chooseLanguage(item) {
                 this.locale = item
                 localStorage.setItem("locale", this.locale)
                 i18n.locale = this.locale;
             },
-
 
             //麦克风音量检测-开始
             testMicrophoneHandelStart() {
