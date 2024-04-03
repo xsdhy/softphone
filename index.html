@@ -10,7 +10,7 @@
     <link rel="stylesheet"
           href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/theme-chalk/index.min.css">
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/element-ui/2.15.7/index.min.js"></script>
-    <script src="https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_14274_24.f20fe80492657f7818c76ceda219ec70.js"></script>
+    <script src="https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_14274_28.22d8df2a1d7d6a49caf18bfcc2e01f75.js"></script>
     <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue-i18n/8.9.0/vue-i18n.min.js"></script>
 
 </head>
@@ -97,31 +97,33 @@
     <el-card v-show="statusIsLogin" class="config">
         <div v-if="latency_stat!=undefined">
             <el-row :gutter="20">
-                {{$t('message.delay')}}:{{latency_stat.latencyTime}}ms. {{$t('message.packetLoss')}}:<i class="el-icon-top" style="color: green"></i>{{(latency_stat.upLossRate * 100).toFixed(2)}}% / <i class="el-icon-bottom" style="color: red"></i>{{(latency_stat.downLossRate * 100).toFixed(2)}}%
+                {{$t('message.delay')}}:{{latency_stat.latencyTime}}ms.
+                {{$t('message.packetLoss')}}:
+                <iconpark-icon name="up-small" style="color: green"></iconpark-icon>
+                {{(latency_stat.upLossRate * 100).toFixed(2)}}% /
+                <iconpark-icon name="down-small" style="color: red"></iconpark-icon>
+                {{(latency_stat.downLossRate * 100).toFixed(2)}}%
             </el-row>
 
             <el-row>
                 <el-col :span="1">
-                <i class="el-icon-mic"></i>
+                    <iconpark-icon name="microphone"></iconpark-icon>
                 </el-col>
                 <el-col :span="23">
-                <el-progress :stroke-width="24"
-                             :percentage="latency_stat.upAudioLevel*100"
-                             color="green"
-                             :show-text="false"></el-progress>
+                    <el-progress :stroke-width="24" :percentage="latency_stat.upAudioLevel*100" color="green" :show-text="false"></el-progress>
                 </el-col>
             </el-row>
 
             <el-row style="padding-top: 2px">
                 <el-col :span="1">
-                <iconpark-icon name="cancelMute-quxiaojingyin"></iconpark-icon>
+                    <iconpark-icon name="cancelMute-quxiaojingyin"></iconpark-icon>
                 </el-col>
                 <el-col :span="23">
-                <el-progress
-                        :stroke-width="24"
-                        :percentage="latency_stat.downAudioLevel*100"
-                        color="red"
-                        :show-text="false"></el-progress>
+                    <el-progress
+                            :stroke-width="24"
+                            :percentage="latency_stat.downAudioLevel*100"
+                            color="red"
+                            :show-text="false"></el-progress>
                 </el-col>
             </el-row>
         </div>
@@ -154,8 +156,9 @@
                     <el-button class="number-op"
                                :disabled="!statusIsLogin || statusIsring || statusIsCall"
                                type="primary"
-                               icon="el-icon-phone"
-                               @click="makeCall"></el-button>
+                               @click="makeCall">
+                        <iconpark-icon name="phone-telephone"></iconpark-icon>
+                    </el-button>
                 </div>
             </div>
             <div style="display: flex;width: 100%;">
@@ -174,8 +177,9 @@
                 <div style="width:25%;height: 100px;margin-left: 5px">
                     <el-button class="number-op"
                                type="info"
-                               icon="el-icon-caret-left"
-                               @click="backspaceNumber()"></el-button>
+                               @click="backspaceNumber()">
+                        <iconpark-icon name="delete-two"></iconpark-icon>
+                    </el-button>
                 </div>
             </div>
         </div>
@@ -236,7 +240,8 @@
                                           show-password/>
                             </el-form-item>
                             <el-form-item :label="$t('message.autoMute')">
-                                <el-switch v-model="autoDisableMic" active-color="#13ce66" inactive-color="#666666"></el-switch>
+                                <el-switch v-model="autoDisableMic" active-color="#13ce66"
+                                           inactive-color="#666666"></el-switch>
                             </el-form-item>
                         </el-collapse-item>
                     </el-collapse>
@@ -253,12 +258,9 @@
                                     <el-descriptions-item :label="$t('message.serverAddress')">{{ props.row.host
                                         }}:{{ props.row.port }}
                                     </el-descriptions-item>
-                                    <el-descriptions-item label="domain">{{ props.row.domain }}</el-descriptions-item>
                                     <el-descriptions-item :label="$t('message.extensionNumber')">{{ props.row.extNo }}
                                     </el-descriptions-item>
                                     <el-descriptions-item :label="$t('message.password')">{{ props.row.extPwd }}
-                                    </el-descriptions-item>
-                                    <el-descriptions-item :label="$t('message.share')">{{ shareAccount(props.row) }}
                                     </el-descriptions-item>
                                 </el-descriptions>
                             </template>
@@ -293,7 +295,7 @@
         <el-tab-pane :label="$t('message.DebuggingInformation')" name="test">
             <el-divider content-position="left">{{$t('message.equipmentList')}}</el-divider>
             <li v-for="(device,index) in mediaDevices">
-                {{ device.kindText }}-{{ device.label }}
+                {{ device.kind.replace("audio", "") }}-{{ device.label }}
             </li>
 
             <el-divider content-position="left">{{$t('message.microphoneTest')}}</el-divider>
@@ -587,7 +589,7 @@
 
                 latency_stat: undefined,
                 autoAnswer: false,//自动接听
-                autoDisableMic:false,//自动静音
+                autoDisableMic: false,//自动静音
                 disableMic: false,//静音
 
                 loading: null,
@@ -599,7 +601,7 @@
                     {"label": "Spanish", "value": "es"},
                     {"label": "Portuguese", "value": "pt"},
                 ],
-                callEndInfo:undefined,
+                callEndInfo: undefined,
             }
         },
         created() {
@@ -614,8 +616,8 @@
             }
             if (!this.locale) {
                 for (let i = 0; i < this.locales.length; i++) {
-                    if (navigator.language===this.locales[i].value){
-                        this.locale=navigator.language
+                    if (navigator.language === this.locales[i].value) {
+                        this.locale = navigator.language
                     }
                 }
             }
@@ -627,6 +629,7 @@
             i18n.locale = this.locale
 
             SipCall.getMediaDeviceInfo().then((res) => {
+                console.log(res)
                 this.mediaDevices = res;
             });
         },
@@ -661,7 +664,7 @@
             },
             makeCall() {
                 console.log("点击拨打按钮")
-                this.callEndInfo=undefined
+                this.callEndInfo = undefined
                 if (this.callPhoneNumber.length <= 2) {
                     this.$message({
                         message: this.$t('message.theCalledWasNotEntered'),
@@ -725,14 +728,14 @@
                         this.statusIsCall = false;
                         this.disableMic = false;
                         this.latency_stat = undefined;
-                        this.callEndInfo=undefined;
+                        this.callEndInfo = undefined;
                         break;
                     case "INCOMING_CALL":
-                        this.callEndInfo=undefined
+                        this.callEndInfo = undefined
                         this.playRingMedia()
                     case "OUTGOING_CALL":
                         console.log("来电", data.direction)
-                        this.callEndInfo=undefined
+                        this.callEndInfo = undefined
                         this.startTimerCall();
                         this.statusIsring = true;
                         this.callDirection = data.direction;
@@ -744,7 +747,7 @@
                         }
                         break;
                     case "IN_CALL":
-                        if (this.autoDisableMic){
+                        if (this.autoDisableMic) {
                             //自动禁音
                             this.sipClient.mute();
                         }
@@ -762,7 +765,7 @@
                         this.statusIsHold = false;
                         this.disableMic = false;
                         this.latency_stat = undefined;
-                        this.callEndInfo=data
+                        this.callEndInfo = data
                         break;
                     case "HOLD":
                         this.statusIsHold = true;
@@ -874,7 +877,7 @@
             },
 
             accountGetAll() {
-                this.historyAccounts=storage.get("historyAccounts");
+                this.historyAccounts = storage.get("historyAccounts");
                 return this.historyAccounts;
             },
             accountGet(accountKey) {
@@ -926,10 +929,7 @@
                     console.log("====>", JSON.parse(window.atob(this.getQueryVariable("u"))))
                 }
             },
-            //分享历史账号
-            shareAccount(item) {
-                return window.location.host + "?u=" + window.btoa(JSON.stringify(item))
-            },
+
             chooseLanguage(item) {
                 this.locale = item
                 localStorage.setItem("locale", this.locale)

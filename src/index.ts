@@ -720,22 +720,7 @@ export default class SipCall {
         if (navigator.mediaDevices == null) {
             return [];
         }
-        let deviceInfos = await navigator.mediaDevices.enumerateDevices();
-        let devices: [] = [];
-        for (let {kind, label, deviceId, groupId} of deviceInfos) {
-            let kindText = "";
-            switch (kind) {
-                case "audioinput":
-                    kindText = "输入";
-                    break;
-                case "audiooutput":
-                    kindText = "输出";
-                    break;
-                default:
-                    kindText = "未知";
-            }
-            devices.push({kind, label, deviceId, groupId, kindText})
-        }
-        return devices;
+        return  await navigator.mediaDevices.enumerateDevices();
+
     }
 }
