@@ -19,6 +19,9 @@
     <div style="display:none;">
         <video id="audioView" autoplay></video>
     </div>
+    <video style="width: 50" id="remoteView" autoplay></video>
+
+
 
 
     <el-card class="my-softphone" :body-style="{padding: '0px'}">
@@ -710,7 +713,7 @@
             },
             //事件回调
             stateEventListener(event, data) {
-                console.log("收到事件:", event, data);
+                // console.log("收到事件:", event, data);
                 switch (event) {
                     case "DISCONNECTED":
                         this.loading.close();
@@ -738,7 +741,7 @@
                     case "OUTGOING_CALL":
                         this.callEndInfo = undefined
                         this.startTimerCall();
-                        this.playRingMedia();
+                        // this.playRingMedia();
                         this.statusIsring = true;
                         this.callDirection = data.direction;
                         this.discaller = data.otherLegNumber;
@@ -797,7 +800,7 @@
                         break;
                     case "LATENCY_STAT":
                         this.latency_stat = data
-                        if (this.statusIsring && data.downAudioLevel>0){
+                        if (this.statusIsring && data.downAudioLevel>0.01){
                             console.log("停止播放回铃音")
                             this.stopPlayRingMedia()
                         }

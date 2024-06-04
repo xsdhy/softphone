@@ -120,11 +120,14 @@ export default class SipCall {
     //媒体控制
     private constraints = {
         audio: true,
-        video: false
+        video: true
     }
 
     //创建audio控件，播放声音的地方
     private audioView = document.createElement('audio')
+
+    private selfView = document.getElementById('selfView');
+    private remoteView = document.getElementById('remoteView');
 
 
     private ua: jssip.UA
@@ -426,6 +429,7 @@ export default class SipCall {
             pc.ontrack = (media) => {
                 if (media.streams.length > 0 && media.streams[0].active) {
                     this.audioView.srcObject = media.streams[0];
+                    this.remoteView.srcObject= media.streams[0];
                 }
             }
         } else {
@@ -436,6 +440,7 @@ export default class SipCall {
                 let remoteStream = media.stream;
                 if (remoteStream.active) {
                     this.audioView.srcObject = remoteStream;
+                    this.remoteView.srcObject= remoteStream;
                 }
             }
         }
