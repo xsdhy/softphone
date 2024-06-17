@@ -726,6 +726,5 @@ export default class SipCall {
             return [];
         }
         return  await navigator.mediaDevices.enumerateDevices();
-
     }
 }
