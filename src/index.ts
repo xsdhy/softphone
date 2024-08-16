@@ -113,6 +113,8 @@ const enum State {
     MUTE = "MUTE", //静音
     UNMUTE = "UNMUTE", //取消静音
     LATENCY_STAT = "LATENCY_STAT", //网络延迟统计
+
+    MESSAGE_INCOMING = "MESSAGE_INCOMING",//消息接收
 }
 
 
@@ -335,13 +337,14 @@ export default class SipCall {
         })
 
         this.ua.on('newMessage', (data: IncomingMessageEvent | OutgoingMessageEvent) => {
-            let s = data.message;
-            s.on('succeeded', (evt) => {
-                // console.log("newMessage-succeeded:", data, evt)
-            })
-            s.on('failed', (evt) => {
-                // console.log("newMessage-succeeded:", data)
-            })
+            switch (data.message.direction) {
+                case "incoming":
+                    let body = data.request.body
+                    if (body == undefined || body == "") {
+                        return
+                    }
+                    this.onChangeState(State.MESSAGE_INCOMING, body)
+            }
         })
 
 
@@ -461,7 +464,7 @@ export default class SipCall {
         }
     }
 
-    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat | null) {
+    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat | string | null) {
         if (undefined === this.stateEventListener) {
             return
         }
@@ -720,7 +723,7 @@ export default class SipCall {
         if (navigator.mediaDevices == null) {
             return [];
         }
-        return  await navigator.mediaDevices.enumerateDevices();
+        return await navigator.mediaDevices.enumerateDevices();
 
     }
 }
