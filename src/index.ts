@@ -186,7 +186,12 @@ export default class SipCall {
 
         // JsSIP.C.SESSION_EXPIRES=120,JsSIP.C.MIN_SESSION_EXPIRES=120;
         let proto = config.proto ? 'wss' : 'ws'
-        let wsServer = proto + '://' + config.host + ':' + config.port
+
+        let wsServer = proto + '://' + config.host
+        if (config.port != "443") {
+            wsServer = wsServer + ':' + config.port
+        }
+
         this.socket = new jssip.WebSocketInterface(wsServer)
 
         this.ua = new jssip.UA({
