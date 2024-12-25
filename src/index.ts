@@ -545,6 +545,10 @@ export default class SipCall {
     //发起呼叫
     public call = (phone: string, param: CallExtraParam = {}): String => {
         this.micCheck();
+        if (this.currentSession !== undefined) {
+            this.onChangeState(State.ERROR, {msg: '当前通话尚未结束，无法发起新通话.'})
+            return ""
+        }
         //注册情况下发起呼叫
         this.currentCallId = uuidv4();
         if (this.ua && this.ua.isRegistered()) {
