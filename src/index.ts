@@ -79,7 +79,8 @@ interface NetworkLatencyStat {
 
 interface CallExtraParam {
     outNumber?: string;
-    businessId?: String;
+    businessId?: string;
+    [key: string]: string | undefined;
 }
 
 interface CallEndEvent {
@@ -554,12 +555,15 @@ export default class SipCall {
         if (this.ua && this.ua.isRegistered()) {
             const extraHeaders: string[] = ["X-JCallId: " + this.currentCallId];
             if (param) {
-                if (param.businessId) {
-                    extraHeaders.push("X-JBusinessId: " + param.businessId)
-                }
-                if (param.outNumber) {
-                    extraHeaders.push("X-JOutNumber: " + param.outNumber)
-                }
+                // 遍历所有参数，生成对应的头信息
+                Object.keys(param).forEach(key => {
+                    const value = param[key];
+                    if (value) {
+                        // 通用规则：X-J + 首字母大写的key
+                        const headerName = "X-J" + key.charAt(0).toUpperCase() + key.slice(1);
+                        extraHeaders.push(headerName + ": " + value);
+                    }
+                });
             }
             this.outgoingSession = this.ua.call(phone, {
                 eventHandlers: {
