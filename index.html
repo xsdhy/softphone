@@ -140,8 +140,6 @@
                 <br />
             </div>
             <div style="padding-top: 5px">
-                <el-input v-model="callPhoneCaller" placeholder="主叫号码"></el-input>
-
                 <el-input v-model="callPhoneNumber"
                     :placeholder="$t('message.pleaseEnterTheOutboundNumber')"></el-input>
             </div>
@@ -187,7 +185,45 @@
                 </div>
             </div>
 
-            <div>
+            <!-- 高级呼叫设置 -->
+            <div class="weak-section weak-divider">
+                <el-divider content-position="left">高级呼叫设置</el-divider>
+                
+                <el-collapse class="advanced-call-settings">
+                    <el-collapse-item title="📞 呼叫参数配置">
+                        <div v-for="(param, index) in callAdvancedParams" :key="index" style="margin-bottom: 10px;">
+                            <el-row :gutter="10">
+                                <el-col :span="8">
+                                    <el-input v-model="param.key" placeholder="参数名" size="mini"></el-input>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-input v-model="param.value" placeholder="参数值" size="mini"></el-input>
+                                </el-col>
+                                <el-col :span="4">
+                                    <el-button type="danger" size="mini" icon="el-icon-delete" 
+                                               @click="removeCallParam(index)" circle></el-button>
+                                </el-col>
+                            </el-row>
+                        </div>
+                        
+                        <el-button type="primary" size="mini" @click="addCallParam" 
+                                   style="width: 100%; margin-top: 5px; font-size: 11px;">
+                            添加参数
+                        </el-button>
+                        
+                        <div style="margin-top: 10px;">
+                            <el-button type="success" size="mini" @click="saveCallParams">
+                                保存设置
+                            </el-button>
+                            <el-button type="info" size="mini" @click="resetCallParams">
+                                重置默认
+                            </el-button>
+                        </div>
+                    </el-collapse-item>
+                </el-collapse>
+            </div>
+
+            <div class="call-history-section weak-section weak-divider">
                 <el-divider content-position="left">{{$t('message.callHistory')}}</el-divider>
 
                 <el-table :data="callHistory" stripe style="width: 100%" size="mini">
@@ -215,8 +251,9 @@
                     </el-table-column>
                 </el-table>
 
-                <div style="margin-top: 10px; text-align: center;">
-                    <el-button size="mini" type="warning" @click="clearAllCallHistory">
+                <div style="margin-top: 8px; text-align: center;">
+                    <el-button size="mini" type="warning" @click="clearAllCallHistory" 
+                               style="font-size: 10px; padding: 3px 8px;">
                         {{$t('message.clearAllHistory')}}
                     </el-button>
                 </div>
@@ -655,7 +692,6 @@
                 discaller: "",//主叫号码
                 discallee: "",//被叫号码
                 callPhoneNumber: "",//呼出号码
-                callPhoneCaller: "",//主叫号码
 
                 durtime: 0,//计时器
                 callTime: '00:00:00',//计时器-格式化
@@ -667,6 +703,9 @@
                 // 添加通话记录相关数据
                 callHistory: [],//通话记录列表
                 currentCallStartTime: null,//当前通话开始时间
+
+                // 高级呼叫参数设置
+                callAdvancedParams: [],//呼叫参数列表
 
                 networkSpeed: 0,//网速
                 testMicrophoneOb: null,
@@ -698,6 +737,7 @@
             this.initHistoryAccounts();
             this.callPhoneNumber = localStorage.getItem("callPhoneNumber")
             this.initCallHistory();
+            this.initCallAdvancedParams();
 
             this.locale = this.getQueryVariable("l");
             if (!this.locale) {
@@ -763,9 +803,16 @@
 
                 localStorage.setItem("callPhoneNumber", this.callPhoneNumber)
                 this.discallee = this.callPhoneNumber
-                let callId = this.sipClient.call(this.callPhoneNumber.trim(), {
-                    "caller": this.callPhoneCaller.trim()
+                
+                // 构建呼叫参数
+                let callParams = {};
+                this.callAdvancedParams.forEach(param => {
+                    if (param.key && param.key.trim()) {
+                        callParams[param.key.trim()] = param.value.trim();
+                    }
                 });
+                
+                let callId = this.sipClient.call(this.callPhoneNumber.trim(), callParams);
             },
             hungup() {
                 console.log("点击挂断按钮");
@@ -894,7 +941,10 @@
 
 
 
-                        this.addCallRecord(this.callPhoneCaller, this.callPhoneNumber);
+                        // 从高级参数中获取主叫号码
+                        const callerParam = this.callAdvancedParams.find(param => param.key === 'caller');
+                        const callerNumber = callerParam ? callerParam.value : this.agentNo;
+                        this.addCallRecord(callerNumber, this.callPhoneNumber);
                         this.currentCallStartTime = null;
                         break;
                     case "HOLD":
@@ -1080,6 +1130,63 @@
             },
 
 
+
+            //高级呼叫参数相关方法
+            initCallAdvancedParams() {
+                const savedParams = localStorage.getItem('callAdvancedParams');
+                if (savedParams) {
+                    this.callAdvancedParams = JSON.parse(savedParams);
+                } else {
+                    // 默认设置，包含原来的主叫号码参数
+                    this.callAdvancedParams = [
+                        { key: 'caller', value: '' }
+                    ];
+                    this.saveCallParams();
+                }
+            },
+            addCallParam() {
+                // 检查是否已有空的参数，避免重复添加
+                const hasEmpty = this.callAdvancedParams.some(param => !param.key.trim());
+                if (hasEmpty) {
+                    this.$message({
+                        type: 'warning',
+                        message: '请先填写现有的空参数'
+                    });
+                    return;
+                }
+                this.callAdvancedParams.push({ key: '', value: '' });
+            },
+            removeCallParam(index) {
+                this.callAdvancedParams.splice(index, 1);
+            },
+            saveCallParams() {
+                localStorage.setItem('callAdvancedParams', JSON.stringify(this.callAdvancedParams));
+                this.$message({
+                    type: 'success',
+                    message: '呼叫参数已保存'
+                });
+            },
+            resetCallParams() {
+                this.$confirm('确定要重置为默认呼叫参数吗？', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    this.callAdvancedParams = [
+                        { key: 'caller', value: '' }
+                    ];
+                    this.saveCallParams();
+                    this.$message({
+                        type: 'success',
+                        message: '已重置为默认参数'
+                    });
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消重置'
+                    });
+                });
+            },
 
             //通话记录相关方法
             initCallHistory() {
@@ -1320,6 +1427,91 @@
     .config {
         margin-top: 0.5rem;
         max-width: 500px;
+    }
+
+    /*高级呼叫设置样式 - 弱化显示*/
+    .advanced-call-settings {
+        opacity: 0.85;
+        margin-top: 0.3rem;
+    }
+    
+    .advanced-call-settings .el-collapse-item__header {
+        padding-left: 8px;
+        font-size: 11px;
+        color: #606266;
+        font-weight: normal;
+        height: 36px;
+        line-height: 36px;
+    }
+    
+    .advanced-call-settings .el-collapse-item__content {
+        padding: 6px 8px;
+        font-size: 12px;
+        background-color: #fafafa;
+        color: #606266;
+    }
+    
+    .advanced-call-settings .el-input--mini .el-input__inner {
+        font-size: 11px;
+        height: 22px;
+        color: #303133;
+    }
+    
+    .advanced-call-settings .el-button--mini {
+        font-size: 10px;
+        padding: 2px 6px;
+        height: 22px;
+    }
+
+    /*通话记录样式 - 弱化显示*/
+    .call-history-section {
+        opacity: 0.85;
+        font-size: 12px;
+        margin-top: 0.3rem;
+    }
+    
+    .call-history-section .el-divider__text {
+        font-size: 11px;
+        color: #606266;
+        font-weight: normal;
+    }
+    
+    .call-history-section .el-table {
+        font-size: 10px;
+        background-color: #fafafa;
+    }
+    
+    .call-history-section .el-table th,
+    .call-history-section .el-table td {
+        font-size: 10px;
+        padding: 4px 0;
+        color: #606266;
+    }
+    
+    .call-history-section .el-button--mini {
+        font-size: 9px;
+        padding: 2px 4px;
+        height: 20px;
+    }
+
+    /*分割线弱化*/
+    .weak-divider .el-divider__text {
+        font-size: 11px;
+        color: #909399;
+        font-weight: normal;
+    }
+    
+    .weak-divider .el-divider--horizontal {
+        margin: 10px 0;
+    }
+
+    /*整体弱化区域*/
+    .weak-section {
+        background-color: #fafbfc;
+        border-radius: 4px;
+        padding: 8px;
+        margin: 8px 0;
+        border: 1px solid #f0f0f0;
     }
 
     #footer {
