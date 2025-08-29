@@ -34,7 +34,7 @@
                         </div>
                     </div>
                     <div v-show="statusIsCall || statusIsring">
-                        <div class="text">{{$t('message.number')}}：<span class="number">{{ discallee }}</span></div>
+                        <div class="text">{{$t('message.number')}}：<span class="number">{{ (discallee && discallee.length > 11) ? discallee.slice(0, 11) : discallee }}</span></div>
                         <div class="text">{{$t('message.duration')}}：<span class="number">{{ callTime }}</span></div>
                     </div>
                 </div>
@@ -796,6 +796,7 @@
                     });
                     return
                 }
+                this.statusIsring = true;
 
                 localStorage.setItem("callPhoneNumber", this.callPhoneNumber)
                 this.discallee = this.callPhoneNumber
