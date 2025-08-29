@@ -881,6 +881,30 @@
                 }
             },
 
+            //自动拨号
+            autoCall() {
+                const task = new AutoCallTask(this.sipClient,{AutoAfterCallWork:true}, (type, data) => {
+                    console.log("收到事件:", type, data);
+                    switch (type) {
+                        case "task_stat":
+                            this.taskStat = data;
+                            break;
+                        case "task_end":
+                            this.taskStat = data;
+                            break;
+                        case "task_pause":
+                            this.taskStat = data;
+                            break;
+                        case "call_answer":
+                            this.taskStat = data;
+                            break;
+                        case "call_end":
+                            this.taskStat = data;
+                            break;
+                    }
+                });
+            },
+
             accountGetAll() {
                 this.historyAccounts = storage.get("historyAccounts");
                 return this.historyAccounts;
