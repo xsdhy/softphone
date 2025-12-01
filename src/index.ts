@@ -45,13 +45,6 @@ type StunType = "turn" | "stun"
 //呼叫方向:outbound呼出;inbound:呼入
 type CallDirection = "outbound" | "inbound"
 
-interface RTCIceServer {
-    credential?: string;
-    credentialType?: RTCIceCredentialType;
-    urls: string | string[];
-    username?: string;
-}
-
 interface StateListenerMessage {
     msg?: string;
     localAgent?: String;
@@ -167,12 +160,31 @@ export default class SipCall {
 
     //当前通话的网络延迟统计定时器(每秒钟获取网络情况)
     private currentLatencyStatTimer: NodeJS.Timer | undefined;
-    private currentStatReport: NetworkLatencyStat;
+    private currentStatReport: NetworkLatencyStat = this.createEmptyStatReport();
 
     //回调函数
     private stateEventListener: Function | undefined;
 
     private stunConfig: StunConfig | undefined;
+
+    private createEmptyStatReport(): NetworkLatencyStat {
+        return {
+            roundTripTime: 0,
+            inboundLost: 0,
+            inboundPacketsSent: 0,
+            inboundAudioLevel: 0,
+            outboundLost: 0,
+            outboundPacketsSent: 0,
+            outboundAudioLevel: 0
+        };
+    }
+
+    private extractStatusCode(message: EndEvent['message']): number {
+        if (message && 'status_code' in message && typeof (message as any).status_code === 'number') {
+            return (message as any).status_code;
+        }
+        return 0;
+    }
 
 
     //构造函数-初始化SDK
@@ -256,7 +268,7 @@ export default class SipCall {
             this.ua.stop()
         })
         //Fired a few seconds before the registration expires
-        this.ua.on('registrationExpiring', (e) => {
+        this.ua.on('registrationExpiring', () => {
             // console.log("registrationExpiring")
             this.ua.register()
         })
@@ -329,7 +341,7 @@ export default class SipCall {
                 let evtData: CallEndEvent = {
                     answered: true,
                     cause: evt.cause,
-                    code: evt.message?.status_code ?? 0,
+                    code: this.extractStatusCode(evt.message),
                     originator: evt.originator
                 }
                 this.cleanCallingData()
@@ -341,7 +353,7 @@ export default class SipCall {
                 let evtData: CallEndEvent = {
                     answered: false,
                     cause: evt.cause,
-                    code: evt.message?.status_code ?? 0,
+                    code: this.extractStatusCode(evt.message),
                     originator: evt.originator
                 }
                 this.cleanCallingData()
@@ -508,12 +520,7 @@ export default class SipCall {
         this.audioView.autoplay = true;
 
         //网络情况统计
-        this.currentStatReport = {
-            outboundPacketsSent: 0,
-            outboundLost: 0,
-            inboundLost: 0,
-            inboundPacketsSent: 0
-        }
+        this.currentStatReport = this.createEmptyStatReport();
         this.currentLatencyStatTimer = setInterval(() => {
             pc.getStats().then((stats) => {
                 stats.forEach((report) => {
@@ -576,15 +583,17 @@ export default class SipCall {
             })
         }, 1000);
 
-        if ("addTrack" in pc) {
-            pc.ontrack = (media) => {
-                if (media.streams.length > 0 && media.streams[0].active) {
-                    this.audioView.srcObject = media.streams[0];
-                }
+        const pcAny = pc as RTCPeerConnection & { onaddstream?: (media: { stream: any }) => void };
+
+        pcAny.ontrack = (media) => {
+            if (media.streams.length > 0 && media.streams[0].active) {
+                this.audioView.srcObject = media.streams[0];
             }
-        } else {
+        }
+
+        if (pcAny.onaddstream !== undefined) {
             //onaddstream方法被规范不建议使用
-            pc.onaddstream = (media: {
+            pcAny.onaddstream = (media: {
                 stream: any;
             }) => {
                 let remoteStream = media.stream;
@@ -607,12 +616,7 @@ export default class SipCall {
 
         clearInterval(this.currentLatencyStatTimer)
         this.currentLatencyStatTimer = undefined
-        this.currentStatReport = {
-            outboundPacketsSent: 0,
-            outboundLost: 0,
-            inboundLost: 0,
-            inboundPacketsSent: 0
-        }
+        this.currentStatReport = this.createEmptyStatReport();
     }
 
     private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat | IceDebugMessage | string | null | undefined) {
@@ -670,7 +674,6 @@ export default class SipCall {
                     iceTransportPolicy: "all",
                     iceServers: [{
                         username: this.stunConfig.username,
-                        credentialType: "password",
                         credential: this.stunConfig.password,
                         urls: [this.stunConfig.type + ':' + this.stunConfig.host],
                     }]
@@ -809,7 +812,8 @@ export default class SipCall {
 
     //麦克风检测
     public micCheck() {
-        navigator.permissions.query({name: "microphone"}).then((result) => {
+        const micPermission = {name: "microphone" as PermissionName} as PermissionDescriptor;
+        navigator.permissions.query(micPermission).then((result) => {
             if (result.state == "denied") {
                 this.onChangeState(State.MIC_ERROR, {msg: "麦克风权限被禁用,请设置允许使用麦克风"});
                 return;
