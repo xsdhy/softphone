@@ -251,6 +251,8 @@ export default class SipCall {
             let currentEvent: String
             if (data.originator === 'remote') {
                 //来电处理
+                //在这里获取header头，X-JCallId
+                this.currentCallId = data.request.getHeader('X-JCallId')
                 //console.info('>>>>>>>>>>>>>>>>>>>>来电>>>>>>>>>>>>>>>>>>>>')
                 this.incomingSession = data.session
                 this.currentSession = this.incomingSession
