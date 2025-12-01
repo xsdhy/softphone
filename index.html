@@ -94,29 +94,78 @@
         </el-card>
 
         <el-card v-show="statusIsLogin" class="config">
-            <div v-if="latency_stat!=undefined">
-                <el-row :gutter="20">
-                    {{$t('message.delay')}}:{{latency_stat.latencyTime}}ms.
-                    {{$t('message.packetLoss')}}:
-                    <i data-lucide="arrow-up" style="color: green"></i>
-                    {{(latency_stat.upLossRate * 100).toFixed(2)}}% /
-                    <i data-lucide="arrow-down" style="color: red"></i>
-                    {{(latency_stat.downLossRate * 100).toFixed(2)}}%
-                </el-row>
-
-                <el-row>
-                    <el-col :span="1">
-                        <i data-lucide="mic"></i>
+            <!-- 网络/ICE情况区域 -->
+            <div class="network-ice-section weak-section weak-divider">
+                <el-divider content-position="left">通话网络 / ICE</el-divider>
+                <el-row :gutter="10" class="network-ice-top">
+                    <el-col :span="12" class="network-block">
+                        <div class="network-block-title">网络质量</div>
+                        <div v-if="latency_stat!=undefined">
+                            <div class="network-metric">
+                                <span class="metric-label">{{$t('message.delay')}}</span>
+                                <span class="metric-value">{{latency_stat.latencyTime}}ms</span>
+                            </div>
+                            <div class="network-metric">
+                                <span class="metric-label">{{$t('message.packetLoss')}}</span>
+                                <span class="metric-value">
+                                    <iconpark-icon name="up-small" style="color: green"></iconpark-icon>
+                                    {{(latency_stat.upLossRate * 100).toFixed(2)}}% /
+                                    <iconpark-icon name="down-small" style="color: red"></iconpark-icon>
+                                    {{(latency_stat.downLossRate * 100).toFixed(2)}}%
+                                </span>
+                            </div>
+                            <div class="network-progress">
+                                <span class="metric-label">上行</span>
+                                <el-progress :stroke-width="16" :percentage="latency_stat.upAudioLevel*100"
+                                    color="green" :show-text="false"></el-progress>
+                            </div>
+                            <div class="network-progress">
+                                <span class="metric-label">下行</span>
+                                <el-progress :stroke-width="16" :percentage="latency_stat.downAudioLevel*100"
+                                    color="red" :show-text="false"></el-progress>
+                            </div>
+                        </div>
+                        <div v-else class="network-empty">等待通话建立，暂无网络统计</div>
                     </el-col>
-                    <el-col :span="23">
-                        <el-progress :stroke-width="24" :percentage="latency_stat.upAudioLevel*100" color="green"
-                            :show-text="false"></el-progress>
+                    <el-col :span="12" class="ice-block">
+                        <div class="network-block-title">ICE 状态</div>
+                        <div class="ice-state-row">
+                            <span class="ice-label">收集</span>
+                            <el-tag size="mini" :type="iceStateTagType(iceDebug.gatheringState)">
+                                {{ iceDebug.gatheringState || '未开始' }}
+                            </el-tag>
+                            <span class="ice-label ice-label-gap">连接</span>
+                            <el-tag size="mini" :type="iceStateTagType(iceDebug.connectionState)">
+                                {{ iceDebug.connectionState || '未开始' }}
+                            </el-tag>
+                        </div>
+                        <div class="ice-meta">更新：{{ iceDebug.lastUpdate || '等待候选' }}</div>
+                        <div class="ice-pair" v-if="iceDebug.selectedPair">
+                            <div class="ice-pair-row">
+                                <span class="ice-label">本地</span>
+                                <span class="ice-addr">{{ formatCandidateAddr(iceDebug.selectedPair.local) }}</span>
+                                <el-tag size="mini" type="info" v-if="iceDebug.selectedPair.local && (iceDebug.selectedPair.local.candidateType || iceDebug.selectedPair.local.type)">{{ iceDebug.selectedPair.local.candidateType || iceDebug.selectedPair.local.type }}</el-tag>
+                            </div>
+                            <div class="ice-pair-row">
+                                <span class="ice-label">远端</span>
+                                <span class="ice-addr">{{ formatCandidateAddr(iceDebug.selectedPair.remote) }}</span>
+                                <el-tag size="mini" type="info" v-if="iceDebug.selectedPair.remote && (iceDebug.selectedPair.remote.candidateType || iceDebug.selectedPair.remote.type)">{{ iceDebug.selectedPair.remote.candidateType || iceDebug.selectedPair.remote.type }}</el-tag>
+                            </div>
+                            <div class="ice-pair-row">
+                                <span class="ice-label">状态</span>
+                                <el-tag size="mini" :type="iceStateTagType(iceDebug.selectedPair.pair && iceDebug.selectedPair.pair.state)">
+                                    {{ (iceDebug.selectedPair.pair && iceDebug.selectedPair.pair.state) || '--' }}
+                                </el-tag>
+                                <span class="ice-meta" v-if="iceDebug.selectedPair.pair && iceDebug.selectedPair.pair.currentRoundTripTime">RTT {{ (iceDebug.selectedPair.pair.currentRoundTripTime * 1000).toFixed(1) }} ms</span>
+                            </div>
+                        </div>
+                        <div v-else class="ice-empty">暂无候选，等待收集或检查网络/ICE 配置</div>
                     </el-col>
                 </el-row>
 
                 <el-row style="padding-top: 2px">
                     <el-col :span="1">
-                        <i data-lucide="volume-2"></i>
+                        <iconpark-icon name="cancelMute-quxiaojingyin"></iconpark-icon>
                     </el-col>
                     <el-col :span="23">
                         <el-progress :stroke-width="24" :percentage="latency_stat.downAudioLevel*100" color="red"
@@ -713,6 +762,14 @@
                 autoDisableMic: false,//自动静音
                 disableMic: false,//静音
 
+                iceDebug: {
+                    connectionState: '',
+                    gatheringState: '',
+                    candidates: [],
+                    selectedPair: null,
+                    lastUpdate: ''
+                },
+
                 loading: null,
                 sipClient: undefined,
                 locale: 'zh',
@@ -892,9 +949,11 @@
                         this.disableMic = false;
                         this.latency_stat = undefined;
                         this.callEndInfo = undefined;
+                        this.resetIceDebug();
                         break;
                     case "INCOMING_CALL":
                         this.callEndInfo = undefined
+                        this.resetIceDebug();
                         this.currentCallStartTime = new Date().getTime();
                         this.startTimerCall();
                         this.playRingMedia();
@@ -909,6 +968,7 @@
                         break;
                     case "OUTGOING_CALL":
                         this.callEndInfo = undefined
+                        this.resetIceDebug();
                         this.currentCallStartTime = new Date().getTime();
                         this.startTimerCall();
                         this.playRingMedia();
@@ -940,6 +1000,7 @@
                         this.disableMic = false;
                         this.latency_stat = undefined;
                         this.callEndInfo = data;
+                        this.iceDebug.connectionState = 'closed';
 
                         // 记录通话记录
                         console.log("准备记录通话记录", {
@@ -993,11 +1054,76 @@
                             this.stopPlayRingMedia()
                         }
                         break;
+                    case "ICE_GATHERING_STATE":
+                        this.iceDebug.gatheringState = data.gatheringState || data;
+                        this.iceDebug.lastUpdate = new Date().toLocaleTimeString();
+                        break;
+                    case "ICE_CONNECTION_STATE":
+                        this.iceDebug.connectionState = data.connectionState || data;
+                        this.iceDebug.lastUpdate = new Date().toLocaleTimeString();
+                        break;
+                    case "ICE_CANDIDATE":
+                        this.handleIceCandidateEvent(data);
+                        break;
+                    case "ICE_SELECTED_CANDIDATE_PAIR":
+                        this.iceDebug.selectedPair = data;
+                        if (data.connectionState) {
+                            this.iceDebug.connectionState = data.connectionState;
+                        }
+                        if (data.gatheringState) {
+                            this.iceDebug.gatheringState = data.gatheringState;
+                        }
+                        this.iceDebug.lastUpdate = new Date().toLocaleTimeString();
+                        break;
                     case "MIC_ERROR":
                         alert(data.msg);
                         break;
                     default:
                 }
+            },
+            resetIceDebug() {
+                this.iceDebug = {
+                    connectionState: '',
+                    gatheringState: '',
+                    candidates: [],
+                    selectedPair: null,
+                    lastUpdate: ''
+                };
+            },
+            handleIceCandidateEvent(data) {
+                if (!data) {
+                    return;
+                }
+                if (data.completed) {
+                    this.iceDebug.gatheringState = 'complete';
+                    return;
+                }
+                const candidate = data.candidate || {};
+                const key = [candidate.foundation, candidate.address, candidate.port, candidate.type].join("|");
+                const candidateWithKey = Object.assign({ key }, candidate, { raw: data.raw });
+                const existIndex = this.iceDebug.candidates.findIndex((c) => c.key === key);
+                if (existIndex >= 0) {
+                    this.$set(this.iceDebug.candidates, existIndex, candidateWithKey);
+                } else {
+                    this.iceDebug.candidates.push(candidateWithKey);
+                }
+                this.iceDebug.lastUpdate = new Date().toLocaleTimeString();
+            },
+            iceStateTagType(state) {
+                if (!state) return "info";
+                if (state === 'connected' || state === 'completed' || state === 'succeeded' || state === 'complete') return "success";
+                if (state === 'failed' || state === 'disconnected' || state === 'closed') return "danger";
+                if (state === 'checking') return "warning";
+                return "info";
+            },
+            formatCandidateAddr(candidate) {
+                if (!candidate) return "--";
+                const addr = candidate.address || candidate.ip || candidate.ipAddress;
+                const port = candidate.port || candidate.portNumber;
+                if (addr && port) {
+                    return addr + ":" + port;
+                }
+                return addr || "--";
             },
             //启动计时器
             startTimerCall() {
@@ -1505,6 +1631,123 @@
         font-size: 9px;
         padding: 2px 4px;
         height: 20px;
+    }
+
+    /*网络/ICE调试信息*/
+    .network-ice-section {
+        opacity: 0.92;
+        font-size: 12px;
+        margin-top: 0.3rem;
+    }
+
+    .network-ice-top {
+        margin-bottom: 8px;
+    }
+
+    .network-block,
+    .ice-block {
+        background: #fff;
+        border: 1px dashed #e4e7ed;
+        padding: 8px;
+        border-radius: 4px;
+        min-height: 150px;
+    }
+
+    .network-block-title {
+        font-size: 12px;
+        color: #303133;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .network-metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        color: #303133;
+    }
+
+    .metric-label {
+        color: #606266;
+        font-size: 12px;
+        margin-right: 6px;
+    }
+
+    .metric-value {
+        font-weight: 600;
+    }
+
+    .network-progress {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
+    .network-progress .metric-label {
+        width: 36px;
+    }
+
+    .network-progress .el-progress {
+        flex: 1;
+    }
+
+    .network-empty {
+        color: #909399;
+        font-size: 12px;
+        text-align: center;
+        padding-top: 12px;
+    }
+
+    .ice-state-row {
+        margin-bottom: 6px;
+    }
+
+    .ice-label {
+        color: #606266;
+        font-size: 12px;
+        margin-right: 6px;
+    }
+
+    .ice-meta {
+        font-size: 11px;
+        color: #909399;
+        margin: 4px 0 8px;
+    }
+
+    .ice-label-gap {
+        margin-left: 12px;
+    }
+
+    .ice-pair {
+        margin-bottom: 8px;
+    }
+
+    .ice-pair-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
+    .ice-addr {
+        flex: 1;
+        font-weight: 600;
+    }
+
+    .ice-empty {
+        color: #909399;
+        font-size: 12px;
+        text-align: center;
+        padding: 6px 0;
+    }
+
+    .ice-table-wrap {
+        max-height: 220px;
+        overflow: auto;
+        background: #fff;
+        border: 1px dashed #e4e7ed;
+        border-radius: 4px;
+        padding: 6px;
     }
 
     /*分割线弱化*/

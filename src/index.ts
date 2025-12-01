@@ -98,6 +98,17 @@ interface LatencyStat {
     downAudioLevel: number,//下行-inbound-音量
 }
 
+interface IceDebugMessage {
+    gatheringState?: RTCIceGatheringState;
+    connectionState?: RTCIceConnectionState;
+    candidate?: any;
+    raw?: string;
+    completed?: boolean;
+    pair?: any;
+    local?: any;
+    remote?: any;
+}
+
 const enum State {
     MIC_ERROR = "MIC_ERROR",//麦克风检测异常
     ERROR = "ERROR",//错误操作或非法操作
@@ -116,6 +127,10 @@ const enum State {
     LATENCY_STAT = "LATENCY_STAT", //网络延迟统计
 
     MESSAGE_INCOMING = "MESSAGE_INCOMING",//消息接收
+    ICE_CANDIDATE = "ICE_CANDIDATE", //ICE候选信息
+    ICE_GATHERING_STATE = "ICE_GATHERING_STATE", //ICE收集阶段
+    ICE_CONNECTION_STATE = "ICE_CONNECTION_STATE", //ICE连接阶段
+    ICE_SELECTED_CANDIDATE_PAIR = "ICE_SELECTED_CANDIDATE_PAIR", //已选用的候选对
 }
 
 
@@ -146,6 +161,8 @@ export default class SipCall {
     private otherLegNumber: String | undefined;
     //当前通话uuid
     private currentCallId: String | undefined;
+    //已绑定调试信息的连接，防止重复绑定
+    private observedPeerConnections = new WeakSet<RTCPeerConnection>();
 
 
     //当前通话的网络延迟统计定时器(每秒钟获取网络情况)
@@ -265,9 +282,8 @@ export default class SipCall {
             }
 
             s.on('peerconnection', (evt: PeerConnectionEvent) => {
-                // console.info('onPeerconnection');
-                //处理通话中媒体流
-                this.handleAudio(evt.peerconnection)
+                //处理通话中媒体流和调试信息
+                this.setupPeerConnection(evt.peerconnection);
             });
 
             s.on('connecting', () => {
@@ -358,6 +374,133 @@ export default class SipCall {
 
         //启动UA
         this.ua.start()
+    }
+
+    //统一初始化peerconnection，避免重复绑定
+    private setupPeerConnection(pc: RTCPeerConnection) {
+        if (this.observedPeerConnections.has(pc)) {
+            return;
+        }
+        this.observedPeerConnections.add(pc);
+        this.handleAudio(pc);
+        this.bindPeerConnectionDebugEvents(pc);
+    }
+
+    //绑定ICE调试事件，便于在UI中展示
+    private bindPeerConnectionDebugEvents(pc: RTCPeerConnection) {
+        //首次上报当前状态
+        this.onChangeState(State.ICE_GATHERING_STATE, {gatheringState: pc.iceGatheringState});
+        this.onChangeState(State.ICE_CONNECTION_STATE, {connectionState: pc.iceConnectionState});
+        this.emitSelectedCandidatePair(pc);
+
+        pc.addEventListener('icecandidate', (event) => {
+            if (event.candidate && event.candidate.candidate) {
+                const parsedCandidate = this.parseCandidate(event.candidate.candidate);
+                this.onChangeState(State.ICE_CANDIDATE, {
+                    candidate: parsedCandidate,
+                    raw: event.candidate.candidate
+                });
+            } else {
+                this.onChangeState(State.ICE_CANDIDATE, {completed: true});
+            }
+            this.emitSelectedCandidatePair(pc);
+        });
+
+        pc.addEventListener('icegatheringstatechange', () => {
+            this.onChangeState(State.ICE_GATHERING_STATE, {gatheringState: pc.iceGatheringState});
+            this.emitSelectedCandidatePair(pc);
+        });
+
+        pc.addEventListener('iceconnectionstatechange', () => {
+            this.onChangeState(State.ICE_CONNECTION_STATE, {connectionState: pc.iceConnectionState});
+            this.emitSelectedCandidatePair(pc);
+        });
+    }
+
+    //解析候选字符串，提取主要信息用于展示
+    private parseCandidate(candidate: string | undefined) {
+        if (!candidate) {
+            return undefined;
+        }
+        const parts = candidate.trim().split(/\s+/);
+        if (parts.length < 8) {
+            return {raw: candidate};
+        }
+        const foundation = parts[0].split(':')[1] || parts[0];
+        const component = parts[1];
+        const protocol = parts[2];
+        const priority = Number(parts[3]);
+        const address = parts[4];
+        const port = Number(parts[5]);
+        const typeIndex = parts.indexOf('typ');
+        const type = typeIndex > -1 ? parts[typeIndex + 1] : '';
+        const tcpIndex = parts.indexOf('tcptype');
+        const relAddrIndex = parts.indexOf('raddr');
+        const relPortIndex = parts.indexOf('rport');
+
+        return {
+            foundation,
+            component,
+            protocol,
+            priority,
+            address,
+            port,
+            type,
+            tcpType: tcpIndex > -1 ? parts[tcpIndex + 1] : undefined,
+            relatedAddress: relAddrIndex > -1 ? parts[relAddrIndex + 1] : undefined,
+            relatedPort: relPortIndex > -1 ? Number(parts[relPortIndex + 1]) : undefined,
+            raw: candidate
+        };
+    }
+
+    //上报当前选中的候选对，便于排查连通性
+    private emitSelectedCandidatePair(pc: RTCPeerConnection) {
+        pc.getStats().then((stats) => {
+            const reportMap = new Map<string, any>();
+            stats.forEach((report) => {
+                reportMap.set(report.id, report);
+            });
+
+            //收集本地/远端候选
+            const candidates = new Map<string, any>();
+            stats.forEach((report) => {
+                if (report.type === 'local-candidate' || report.type === 'remote-candidate') {
+                    candidates.set(report.id, report);
+                }
+            });
+
+            let selectedPair: any | undefined;
+            stats.forEach((report) => {
+                if (report.type === 'transport' && report.selectedCandidatePairId) {
+                    selectedPair = reportMap.get(report.selectedCandidatePairId);
+                }
+                if (report.type === 'candidate-pair' && report.nominated) {
+                    selectedPair = report;
+                }
+            });
+
+            if (!selectedPair) {
+                return;
+            }
+
+            this.onChangeState(State.ICE_SELECTED_CANDIDATE_PAIR, {
+                pair: {
+                    state: selectedPair.state,
+                    nominated: selectedPair.nominated,
+                    currentRoundTripTime: selectedPair.currentRoundTripTime,
+                    availableOutgoingBitrate: selectedPair.availableOutgoingBitrate,
+                    bytesSent: selectedPair.bytesSent,
+                    bytesReceived: selectedPair.bytesReceived,
+                    totalRoundTripTime: selectedPair.totalRoundTripTime
+                },
+                local: candidates.get(selectedPair.localCandidateId),
+                remote: candidates.get(selectedPair.remoteCandidateId),
+                connectionState: pc.iceConnectionState,
+                gatheringState: pc.iceGatheringState
+            });
+        }).catch((e) => {
+            console.debug('emitSelectedCandidatePair error', e);
+        });
     }
 
     //处理音频播放
@@ -472,7 +615,7 @@ export default class SipCall {
         }
     }
 
-    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat | string | null) {
+    private onChangeState(event: String, data: StateListenerMessage | CallEndEvent | LatencyStat | IceDebugMessage | string | null | undefined) {
         if (undefined === this.stateEventListener) {
             return
         }
@@ -573,7 +716,7 @@ export default class SipCall {
                     peerconnection: (e: {
                         peerconnection: RTCPeerConnection;
                     }) => {
-                        this.handleAudio(e.peerconnection)
+                        this.setupPeerConnection(e.peerconnection)
                     }
                 },
                 mediaConstraints: this.constraints,
