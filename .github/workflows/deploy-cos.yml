@@ -103,16 +103,17 @@ jobs:
       - name: Prepare CDN refresh payload
         id: cdn_payload
         run: |
-          python - <<'PY'
-import os, json
-raw = os.environ.get("CDN_REFRESH_PATHS", "").strip()
-paths = [line.strip() for line in raw.replace(",", "\n").splitlines() if line.strip()]
-if not paths:
-    raise SystemExit("No CDN paths provided")
-print("Will purge CDN paths:", paths)
-with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-    fh.write(f'paths={json.dumps(paths)}\n')
-PY
+          cat > /tmp/prepare_cdn.py << 'EOF'
+          import os, json
+          raw = os.environ.get("CDN_REFRESH_PATHS", "").strip()
+          paths = [line.strip() for line in raw.replace(",", "\n").splitlines() if line.strip()]
+          if not paths:
+              raise SystemExit("No CDN paths provided")
+          print("Will purge CDN paths:", paths)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f'paths={json.dumps(paths)}\n')
+          EOF
+          python /tmp/prepare_cdn.py
 
       - name: Configure tccli profile
         run: |
