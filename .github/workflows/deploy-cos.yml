@@ -1,0 +1,99 @@
+name: Deploy to Tencent COS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
+      COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
+      COS_BUCKET: ${{ secrets.COS_BUCKET }}
+      COS_REGION: ${{ secrets.COS_REGION }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Log trigger context
+        run: |
+          echo "Actor: $GITHUB_ACTOR"
+          echo "Ref: $GITHUB_REF"
+          echo "SHA: $GITHUB_SHA"
+          echo "Run ID: $GITHUB_RUN_ID"
+          echo "Workflow: $GITHUB_WORKFLOW"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+
+      - name: Show tool versions
+        run: |
+          node -v
+          yarn -v
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build project
+        run: |
+          yarn build
+          echo "Build output (lib/):"
+          ls -la lib || { echo "lib directory missing after build"; exit 1; }
+
+      - name: Validate deploy inputs
+        run: |
+          missing=0
+          for var in COS_SECRET_ID COS_SECRET_KEY COS_BUCKET COS_REGION; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Missing required secret: $var"
+              missing=1
+            else
+              echo "Detected $var"
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          echo "COS bucket: $COS_BUCKET"
+          echo "COS region: $COS_REGION"
+
+      - name: Install COS CLI tool
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-cache-dir coscmd
+          coscmd --version
+
+      - name: Configure coscmd
+        run: |
+          coscmd config -a "$COS_SECRET_ID" -s "$COS_SECRET_KEY" -b "$COS_BUCKET" -r "$COS_REGION"
+          echo "Configured coscmd for bucket $COS_BUCKET in $COS_REGION"
+
+      - name: Upload lib directory to COS
+        run: |
+          echo "Uploading ./lib/ to COS path: /lib/"
+          coscmd upload -rs ./lib/ /lib/
+          echo "Listing /lib/ for verification:"
+          coscmd list /lib/
+
+      - name: Upload index.html to COS
+        run: |
+          if [ -f "index.html" ]; then
+            echo "Uploading index.html to COS root"
+            coscmd upload index.html /index.html
+            echo "Listing root for verification:"
+            coscmd list / | grep index.html
+          else
+            echo "Warning: index.html not found, skipping upload"
+          fi
