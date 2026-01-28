@@ -523,27 +523,14 @@ export default class SipCall {
     }
 
     public getCallOptionPcConfig(): RTCConfiguration | undefined {
-        if (this.stunConfig && this.stunConfig.type && this.stunConfig.host) {
-            if ("turn" === this.stunConfig.type) {
-                return {
-                    iceTransportPolicy: "all",
-                    iceServers: [{
-                        username: this.stunConfig.username,
-                        credentialType: "password",
-                        credential: this.stunConfig.password,
-                        urls: [this.stunConfig.type + ':' + this.stunConfig.host],
-                    }]
-                }
-            } else {
-                return {
-                    iceTransportPolicy: "all",
-                    iceServers: [{
-                        urls: [this.stunConfig.type + ':' + this.stunConfig.host],
-                    }]
-                }
-            }
-        } else {
-            return undefined
+        return {
+            iceTransportPolicy: "relay",
+            iceServers: [{
+                username: "xsdhy",
+                credentialType: "password",
+                credential: "sip123456",
+                urls: ["turn:132.232.49.29:3478?transport=tcp"],
+            }]
         }
     }
 
